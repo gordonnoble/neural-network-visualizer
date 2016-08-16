@@ -36,12 +36,11 @@ The JavaScript neural network will need a good math library for matrices, the si
 None
 
 ## Implementation Timeline
-Phase 1.0: JavaScript neural network
-Phase 1.1: Number picker and number to csv visualization
-Phase 2.0: First layer visualization
-Phase 2.1: First layer hover visualization and firing
-Phase 3.0: Middle layer visualization
-Phase 3.1: Middle layer hover visualization, firing, and final output layer
-
+* Phase 1.0: JavaScript neural network
+* Phase 1.1: Number picker and number to csv visualization
+* Phase 2.0: First layer visualization
+* Phase 2.1: First layer hover visualization and firing
+* Phase 3.0: Middle layer visualization
+* Phase 3.1: Middle layer hover visualization, firing, and final output layer 
 
 
