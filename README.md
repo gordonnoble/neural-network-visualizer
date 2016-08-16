@@ -15,22 +15,13 @@ The neural network will be a JavaScript implementation of the python neural netw
 The JavaScript neural network will need a good math library for matrices, the sigmoid function, and random numbers on a curve. Fortunately there are plenty of those. E.g. http://mathjs.org/index.html, http://glmatrix.net/
 
 ## Wireframes
-![number-picker]
-![number-to-csv]
-![first-layer]
-![first-layer-hover]
-![second-layer]
-![second-layer-hover]
-![final-layer-output]
-
-
-[number-picker]: ./wireframes/number_picker.pdf
-[number-to-csv]: ./wireframes/number_to_csv.pdf
-[first-layer]: ./wireframes/first_layer.pdf
-[first-layer-hover]: ./wireframes/first_layer_hover.pdf
-[second-layer]: ./wireframes/second_layer.pdf
-[second-layer-hover]: ./wireframes/second_layer_hover.pdf
-[final-layer-output]: ./wireframes/final_output_layer.pdf
+![number-picker] (./wireframes/number_picker.pdf)
+![number-to-csv] (./wireframes/number_to_csv.pdf)
+![first-layer] (./wireframes/first_layer.pdf)
+![first-layer-hover] (./wireframes/first_layer_hover.pdf)
+![second-layer] (./wireframes/second_layer.pdf)
+![second-layer-hover] (./wireframes/second_layer_hover.pdf)
+![final-layer-output] (./wireframes/final_output_layer.pdf)
 
 ## Backend
 None
@@ -41,6 +32,4 @@ None
 * Phase 2.0: First layer visualization
 * Phase 2.1: First layer hover visualization and firing
 * Phase 3.0: Middle layer visualization
-* Phase 3.1: Middle layer hover visualization, firing, and final output layer 
-
-
+* Phase 3.1: Middle layer hover visualization, firing, and final output layer
