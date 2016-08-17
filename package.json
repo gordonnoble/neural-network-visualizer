@@ -1,0 +1,24 @@
+{
+  "name": "NeuralNetworkVisualizer",
+  "version": "1.0.0",
+  "description": "A program to visualize the steps a simple neural network walks through to interpret a handwritten number. The neural network will be a JavaScript implementation of the python neural network here: https://github.com/makeyourownneuralnetwork/makeyourownneuralnetwork",
+  "main": "index.js",
+  "dependencies": {
+    "webpack": "^1.13.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gordoneccles/NeuralNetworkVisualizer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gordoneccles/NeuralNetworkVisualizer/issues"
+  },
+  "homepage": "https://github.com/gordoneccles/NeuralNetworkVisualizer#readme"
+}
