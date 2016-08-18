@@ -139,4 +139,12 @@ Matrix.prototype.times = function(other) {
   return result;
 };
 
+Matrix.prototype.toArray = function() {
+  let arr = [];
+
+  this.each( x => arr.push(x) );
+
+  return arr;
+};
+
 module.exports = Matrix;

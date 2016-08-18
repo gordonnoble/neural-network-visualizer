@@ -1,5 +1,3 @@
-const MathJS = require('mathjs');
-
 const MyMath = {
   randAroundZero(stdDev) {
     let theta = 2 * Math.PI * Math.random();

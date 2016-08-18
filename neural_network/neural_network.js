@@ -6,6 +6,7 @@ let NeuralNetwork = function(numInputNodes, numHiddenNodes, numOutputNodes, lear
   this.numHiddenNodes = numHiddenNodes;
   this.numOutputNodes = numOutputNodes;
   this.learningRate = learningRate;
+  this.count = 0;
 
   let stdDev = Math.pow(this.numHiddenNodes, -0.5);
   this.wih = new Matrix(this.numHiddenNodes, this.numInputNodes);
@@ -52,17 +53,50 @@ NeuralNetwork.prototype.train = function(inputs, targets) {
 
   let outputErrors = targets.map( (x, i, j) => x - finalOutputs.get(i, j));
   let hiddenErrors = this.who.transpose().dot(outputErrors);
-  console.log(this.who);
+
   let invFinalOut = finalOutputs.map( x => 1 - x );
   let whoCorrections = outputErrors.times(finalOutputs).times(invFinalOut);
   whoCorrections = whoCorrections.dot(hiddenOutputs.transpose()).map( x => x * this.learningRate );
-  console.log(whoCorrections);
   this.who = this.who.map( (x, i, j) => x + whoCorrections.get(i, j));
-  console.log(this.who);
+
   let invHiddenOut = hiddenOutputs.map( x => 1 - x );
   let wihCorrections = hiddenErrors.times(hiddenOutputs).times(invHiddenOut);
   wihCorrections = wihCorrections.dot(inputs.transpose()).map( x => x * this.learningRate );
   this.wih = this.wih.map( (x, i, j) => x + wihCorrections.get(i, j));
+  this.count++;
+  console.log(this.count);
+};
+
+NeuralNetwork.prototype.learn = function(data) {
+  let trainingDigits = data.split(/\r?\n/);
+
+  // let i = 0;
+  // while (i < 5) {
+    trainingDigits.forEach( digit => {
+      let allValues = digit.split(',').map( x => parseFloat(x));
+      let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
+
+      let targets = [];
+      let j = 0;
+      while(j < 10) { targets.push(0.01); j++; }
+      let idx = parseInt(allValues[0]);
+      targets[idx] = 0.99;
+      this.train(inputs, targets);
+    });
+  //   i++;
+  // }
+};
+
+NeuralNetwork.prototype.interpret = function(data, idx) {
+  let testDigits = data.split(/\r?\n/);
+  let digit = testDigits[idx];
+
+  let allValues = digit.split(',').map( x => parseFloat(x));
+  let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
+
+  let outputs = this.query(inputs).toArray();
+  let chosenDigit = outputs.indexOf(Math.max(...outputs));
+  return chosenDigit;
 };
 
 module.exports = NeuralNetwork;
