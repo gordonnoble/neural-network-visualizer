@@ -22,19 +22,19 @@ let NeuralNetwork = function(numInputNodes, numHiddenNodes, numOutputNodes, lear
 };
 
 NeuralNetwork.prototype.query = function(inputs) {
-  inputs = new Matrix(inputs).transpose();
+  this.inputs = new Matrix(inputs).transpose();
 
-  let hiddenInputs = this.wih.dot(inputs);
-  let hiddenOutputs = hiddenInputs.map( x =>
+  this.hiddenInputs = this.wih.dot(this.inputs);
+  this.hiddenOutputs = this.hiddenInputs.map( x =>
     MyMath.sigmoid(x)
   );
 
-  let finalInputs = this.who.dot(hiddenOutputs);
-  let finalOutputs = finalInputs.map( x =>
+  this.finalInputs = this.who.dot(this.hiddenOutputs);
+  this.finalOutputs = this.finalInputs.map( x =>
     MyMath.sigmoid(x)
   );
 
-  return finalOutputs;
+  return this.finalOutputs;
 };
 
 NeuralNetwork.prototype.train = function(inputs, targets) {
@@ -87,16 +87,24 @@ NeuralNetwork.prototype.learn = function(data) {
   // }
 };
 
-NeuralNetwork.prototype.interpret = function(data, idx) {
-  let testDigits = data.split(/\r?\n/);
-  let digit = testDigits[idx];
-
-  let allValues = digit.split(',').map( x => parseFloat(x));
+NeuralNetwork.prototype.interpret = function(digitCSV) {
+  let allValues = digitCSV.split(',').map( x => parseFloat(x));
   let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
 
   let outputs = this.query(inputs).toArray();
   let chosenDigit = outputs.indexOf(Math.max(...outputs));
   return chosenDigit;
+};
+
+NeuralNetwork.prototype.sampleInputs = function(numNodes) {
+    let sampleNodes = [];
+    let inputs = this.inputs.toArray();
+
+    for(let i = 0; i < numNodes; i++) {
+      let randIdx = Math.floor(Math.random()*inputs.length);
+      sampleNodes.push(inputs[randIdx]);
+    }
+    return sampleNodes;
 };
 
 module.exports = NeuralNetwork;
