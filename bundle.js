@@ -44,9 +44,8 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// const Canvas = require('./visualization/canvas.js');
 	const NeuralNetwork = __webpack_require__(1);
-	const Visualizer = __webpack_require__(5);
+	const Visualizer = __webpack_require__(4);
 
 	document.addEventListener("DOMContentLoaded",
 	  () => {
@@ -140,8 +139,8 @@
 	NeuralNetwork.prototype.learn = function(data) {
 	  let trainingDigits = data.split(/\r?\n/);
 
-	  // let i = 0;
-	  // while (i < 5) {
+	  let i = 0;
+	  while (i < 5) {
 	    trainingDigits.forEach( digit => {
 	      let allValues = digit.split(',').map( x => parseFloat(x));
 	      let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
@@ -153,8 +152,8 @@
 	      targets[idx] = 0.99;
 	      this.train(inputs, targets);
 	    });
-	  //   i++;
-	  // }
+	    i++;
+	  }
 	};
 
 	NeuralNetwork.prototype.interpret = function(digitCSV) {
@@ -166,15 +165,41 @@
 	  return chosenDigit;
 	};
 
-	NeuralNetwork.prototype.sampleInputs = function(numNodes) {
-	    let sampleNodes = [];
-	    let inputs = this.inputs.toArray();
+	NeuralNetwork.prototype.prepSample = function(numSampleInputs, numSampleHiddenInputs) {
+	    this.sampleInputs = [];
+	    this.sampleHiddenInputs = [];
+	    this.sampleHiddenOutputs = [];
+	    this.sampleWIH = new Matrix(numSampleHiddenInputs, numSampleInputs);
 
-	    for(let i = 0; i < numNodes; i++) {
-	      let randIdx = Math.floor(Math.random()*inputs.length);
-	      sampleNodes.push(inputs[randIdx]);
-	    }
-	    return sampleNodes;
+	    let sampleInputIdxs = NeuralNetwork.randomIdxs(this.numInputNodes, numSampleInputs);
+	    let sampleHiddenIdxs = NeuralNetwork.randomIdxs(this.numHiddenNodes, numSampleHiddenInputs);
+
+	    let inputs = this.inputs.toArray();
+	    let hiddenInputs = this.hiddenInputs.toArray();
+	    let hiddenOutputs = this.hiddenOutputs.toArray();
+
+	    sampleInputIdxs.forEach( (inputIdx, i) => {
+	      this.sampleInputs.push(inputs[inputIdx]);
+
+	      sampleHiddenIdxs.forEach( (hiddenIdx, j) => {
+	        this.sampleWIH.set(j, i, this.wih.get(hiddenIdx, inputIdx));
+	      });
+	    });
+
+	    sampleHiddenIdxs.forEach( hiddenIdx => {
+	      this.sampleHiddenInputs.push(hiddenInputs[hiddenIdx]);
+	      this.sampleHiddenOutputs.push(hiddenOutputs[hiddenIdx]);
+	    });
+	};
+
+	NeuralNetwork.randomIdxs = function(arrayLength, numIdxs) {
+	  let idxs = [];
+
+	  for(let i = 0; i < numIdxs; i++) {
+	    idxs.push(Math.floor(Math.random()*arrayLength));
+	  }
+
+	  return idxs;
 	};
 
 	module.exports = NeuralNetwork;
@@ -357,8 +382,7 @@
 
 
 /***/ },
-/* 4 */,
-/* 5 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	const Matrix = __webpack_require__(3);
@@ -382,8 +406,7 @@
 	  for (let i = 0; i < 10; i++) {
 	    let digit = document.createElement("div");
 	    digit.className = "digit hoverable";
-	    digit.id = i;
-	    digit.innerHTML = i;
+	    digit.id = i; digit.innerHTML = i;
 	    $(digit).on("click", this.pick.bind(this));
 	    digitsBox.appendChild(digit);
 	  }
@@ -395,6 +418,7 @@
 	  let digit = parseInt(event.target.id);
 	  let digitCSV = this.testDigits[digit];
 	  this.neuralNetwork.interpret(digitCSV);
+	  this.neuralNetwork.prepSample(20, 15);
 	  this.displayCSV(digit, digitCSV);
 	};
 
@@ -416,10 +440,7 @@
 
 	  let coolEl = this.makeNextButton("Cool", this.showScaledCSV);
 
-	  CSVBox.appendChild(digitEl);
-	  CSVBox.appendChild(equalsEl);
-	  CSVBox.appendChild(csvEl);
-	  CSVBox.appendChild(coolEl);
+	  Visualizer.appendChildren(CSVBox, digitEl, equalsEl, csvEl, coolEl);
 
 	  this.visualizationEl.appendChild(CSVBox);
 
@@ -445,8 +466,7 @@
 
 	  let groovyEl = this.makeNextButton("Groovy", this.displayInputNodes);
 
-	  scaledCSVBox.appendChild(scaledCSVEl);
-	  scaledCSVBox.appendChild(groovyEl);
+	  Visualizer.appendChildren(scaledCSVBox, scaledCSVEl, groovyEl);
 
 	  this.headerEl.innerHTML = "each value is scaled between 0 and 1";
 	  this.visualizationEl.appendChild(scaledCSVBox);
@@ -461,25 +481,22 @@
 	  inputNodesBox.className = "visual-box hidden";
 
 	  let inputNodesList = document.createElement("div");
-	  inputNodesList.id = "input-nodes-list";
-	  let sampleNodeVals = this.neuralNetwork.sampleInputs(20);
+	  inputNodesList.className = "node-list";
+	  let sampleNodeVals = this.neuralNetwork.sampleInputs;
 
 	  for(let i = 0; i < 20; i++) {
 	    let nodeEl = document.createElement("div");
-	    nodeEl.className = "inputNode";
+	    nodeEl.className = "input-node";
 	    let inputValue = document.createElement("p");
 	    inputValue.innerHTML = (Math.floor(sampleNodeVals[i] * 100) / 100);
 	    nodeEl.appendChild(inputValue);
 	    inputNodesList.appendChild(nodeEl);
 	  }
 
-	  let radEl = this.makeNextButton("Rad", () => console.log("Rad indeed"));
+	  let radEl = this.makeNextButton("Rad", this.displayHiddenNodes);
 
-	  inputNodesBox.appendChild(inputNodesList);
-	  inputNodesBox.appendChild(radEl);
-
+	  Visualizer.appendChildren(inputNodesBox, inputNodesList, radEl);
 	  this.visualizationEl.appendChild(inputNodesBox);
-
 
 	  this.headerEl.innerHTML = "the scaled values are supplied as the input to the first node layer (here's a small sample)";
 	  this.slideAndHide(document.getElementById("scaled-csv-box"));
@@ -487,6 +504,72 @@
 	};
 
 	Visualizer.prototype.displayHiddenNodes = function() {
+	  let hiddenNodesBox = document.createElement("div");
+	  hiddenNodesBox.id = "hidden-nodes-box";
+	  hiddenNodesBox.className = "visual-box hidden";
+
+	  let hiddenNodesList = document.createElement("div");
+	  hiddenNodesList.className = "node-list";
+
+	  for(let i = 0; i < 15; i ++) {
+	    let nodeEl = document.createElement("div");
+	    nodeEl.className = "hidden-node";
+	    hiddenNodesList.appendChild(nodeEl);
+	  }
+
+	  $(".input-node").each( (idx, node) =>
+	    $(node).hover(this.connectToHiddenNodes.bind(this), this.removeConnectionsToHiddenNodes.bind(this))
+	  );
+
+	  let dopeEl = this.makeNextButton("Dope", this.fireInputNodes);
+
+	  Visualizer.appendChildren(hiddenNodesBox, hiddenNodesList, dopeEl);
+	  this.visualizationEl.appendChild(hiddenNodesBox);
+
+	  this.headerEl.innerHTML = "the input layer is connected to a second layer of nodes, and each connection is weighted differently";
+	  document.getElementById("rad").remove();
+	  document.getElementById("input-nodes-box").className = "visual-box top";
+	  setTimeout(() => hiddenNodesBox.className = "visual-box center", 0);
+	};
+
+
+	Visualizer.prototype.fireInputNodes = function() {
+	  let hiddenInputs = this.neuralNetwork.sampleHiddenInputs;
+
+	  $(".hidden-node").each( (hiddenIdx, node) => {
+	    let value = document.createElement("p");
+	    value.innerHTML = (Math.floor(hiddenInputs[hiddenIdx] * 100) / 100);
+	    node.appendChild(value);
+	  });
+	};
+
+	Visualizer.prototype.connectToHiddenNodes = function(event) {
+	  let nodeEl = event.target;
+	  let x1 = nodeEl.getBoundingClientRect().left + ($(nodeEl).width() / 2);
+	  let y1 = nodeEl.getBoundingClientRect().bottom - ($(nodeEl).height() / 8);
+	  let inputIdx = $(nodeEl).index();
+	  let sampleWIH = this.neuralNetwork.sampleWIH;
+
+	  let wihEl = d3.select('body').append("svg");
+	  wihEl.attr("id", "wih");
+
+	  $('.hidden-node').each( (hiddenIdx, node) => {
+	    let x2 = node.getBoundingClientRect().left + ($(nodeEl).width() / 2);
+	    let y2 = node.getBoundingClientRect().top + ($(nodeEl).height() / 8);
+
+	    let color = Math.floor(sampleWIH.get(hiddenIdx, inputIdx) * 360) + 160;
+
+	    let path = wihEl.append("line")
+	                      .attr("x1", x1).attr("y1", y1)
+	                      .attr("x2", x2).attr("y2", y2)
+	                      .attr("stroke-width", 4)
+	                      .attr("stroke", `rgb(240,${color},75)`);
+	    path.attr("className", "wih-path");
+	  });
+	};
+
+	Visualizer.prototype.removeConnectionsToHiddenNodes = function(event) {
+	  document.getElementById('wih').remove();
 	};
 
 	Visualizer.prototype.slideAndHide = function(el) {
@@ -497,9 +580,14 @@
 	Visualizer.prototype.makeNextButton = function(buttonText, callback) {
 	  let button = document.createElement("div");
 	  button.className = "next-button hoverable";
+	  button.id = `${buttonText.toLowerCase()}`;
 	  button.innerHTML = buttonText;
 	  $(button).on("click", callback.bind(this));
 	  return button;
+	};
+
+	Visualizer.appendChildren = function(parent, ...children) {
+	  children.forEach(child => parent.appendChild(child));
 	};
 
 	module.exports = Visualizer;

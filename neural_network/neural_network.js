@@ -70,8 +70,8 @@ NeuralNetwork.prototype.train = function(inputs, targets) {
 NeuralNetwork.prototype.learn = function(data) {
   let trainingDigits = data.split(/\r?\n/);
 
-  // let i = 0;
-  // while (i < 5) {
+  let i = 0;
+  while (i < 5) {
     trainingDigits.forEach( digit => {
       let allValues = digit.split(',').map( x => parseFloat(x));
       let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
@@ -83,8 +83,8 @@ NeuralNetwork.prototype.learn = function(data) {
       targets[idx] = 0.99;
       this.train(inputs, targets);
     });
-  //   i++;
-  // }
+    i++;
+  }
 };
 
 NeuralNetwork.prototype.interpret = function(digitCSV) {
@@ -96,15 +96,41 @@ NeuralNetwork.prototype.interpret = function(digitCSV) {
   return chosenDigit;
 };
 
-NeuralNetwork.prototype.sampleInputs = function(numNodes) {
-    let sampleNodes = [];
-    let inputs = this.inputs.toArray();
+NeuralNetwork.prototype.prepSample = function(numSampleInputs, numSampleHiddenInputs) {
+    this.sampleInputs = [];
+    this.sampleHiddenInputs = [];
+    this.sampleHiddenOutputs = [];
+    this.sampleWIH = new Matrix(numSampleHiddenInputs, numSampleInputs);
 
-    for(let i = 0; i < numNodes; i++) {
-      let randIdx = Math.floor(Math.random()*inputs.length);
-      sampleNodes.push(inputs[randIdx]);
-    }
-    return sampleNodes;
+    let sampleInputIdxs = NeuralNetwork.randomIdxs(this.numInputNodes, numSampleInputs);
+    let sampleHiddenIdxs = NeuralNetwork.randomIdxs(this.numHiddenNodes, numSampleHiddenInputs);
+
+    let inputs = this.inputs.toArray();
+    let hiddenInputs = this.hiddenInputs.toArray();
+    let hiddenOutputs = this.hiddenOutputs.toArray();
+
+    sampleInputIdxs.forEach( (inputIdx, i) => {
+      this.sampleInputs.push(inputs[inputIdx]);
+
+      sampleHiddenIdxs.forEach( (hiddenIdx, j) => {
+        this.sampleWIH.set(j, i, this.wih.get(hiddenIdx, inputIdx));
+      });
+    });
+
+    sampleHiddenIdxs.forEach( hiddenIdx => {
+      this.sampleHiddenInputs.push(hiddenInputs[hiddenIdx]);
+      this.sampleHiddenOutputs.push(hiddenOutputs[hiddenIdx]);
+    });
+};
+
+NeuralNetwork.randomIdxs = function(arrayLength, numIdxs) {
+  let idxs = [];
+
+  for(let i = 0; i < numIdxs; i++) {
+    idxs.push(Math.floor(Math.random()*arrayLength));
+  }
+
+  return idxs;
 };
 
 module.exports = NeuralNetwork;

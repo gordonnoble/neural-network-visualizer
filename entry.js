@@ -1,4 +1,3 @@
-// const Canvas = require('./visualization/canvas.js');
 const NeuralNetwork = require('./neural_network/neural_network.js');
 const Visualizer = require('./visualization/visualizer.js');
 
