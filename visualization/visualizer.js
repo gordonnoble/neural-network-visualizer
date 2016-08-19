@@ -12,9 +12,9 @@ const Visualizer = function(canvasEl, headerEl, visualizationEl, neuralNetwork, 
 
 Visualizer.prototype.displayNumberPicker = function() {
   this.headerEl.innerHTML = "pick a number";
-  let digits = document.createElement("div");
-  digits.id = "digits";
-  digits.className = "visual-box center";
+  let digitsBox = document.createElement("div");
+  digitsBox.id = "digits-box";
+  digitsBox.className = "visual-box center";
 
   for (let i = 0; i < 10; i++) {
     let digit = document.createElement("div");
@@ -22,10 +22,10 @@ Visualizer.prototype.displayNumberPicker = function() {
     digit.id = i;
     digit.innerHTML = i;
     $(digit).on("click", this.pick.bind(this));
-    digits.appendChild(digit);
+    digitsBox.appendChild(digit);
   }
 
-  this.visualizationEl.appendChild(digits);
+  this.visualizationEl.appendChild(digitsBox);
 };
 
 Visualizer.prototype.pick = function(event) {
@@ -36,9 +36,9 @@ Visualizer.prototype.pick = function(event) {
 };
 
 Visualizer.prototype.displayCSV = function(digit, digitCSV) {
-  let digitToCSV = document.createElement("div");
-  digitToCSV.className = "visual-box hidden";
-  digitToCSV.id = "digit-to-csv";
+  let CSVBox = document.createElement("div");
+  CSVBox.className = "visual-box hidden";
+  CSVBox.id = "csv-box";
 
   let digitEl = document.createElement("div");
   digitEl.id = "digit";
@@ -48,25 +48,21 @@ Visualizer.prototype.displayCSV = function(digit, digitCSV) {
   equalsEl.id = "equals";
 
   let csvEl = document.createElement("div");
-  csvEl.id = "digitCSV";
+  csvEl.id = "digit-csv";
   csvEl.innerHTML = digitCSV.slice(2, digitCSV.length);
 
-  let cool = document.createElement("div");
-  cool.id = "cool";
-  cool.innerHTML = "cool";
-  cool.className = "hoverable";
-  $(cool).on("click", this.showScaledCSV.bind(this));
+  let coolEl = this.makeNextButton("Cool", this.showScaledCSV);
 
-  digitToCSV.appendChild(digitEl);
-  digitToCSV.appendChild(equalsEl);
-  digitToCSV.appendChild(csvEl);
-  digitToCSV.appendChild(cool);
+  CSVBox.appendChild(digitEl);
+  CSVBox.appendChild(equalsEl);
+  CSVBox.appendChild(csvEl);
+  CSVBox.appendChild(coolEl);
 
-  this.visualizationEl.appendChild(digitToCSV);
+  this.visualizationEl.appendChild(CSVBox);
 
   this.headerEl.innerHTML = "each pixel's greyscale value, presented in a CSV format";
-  document.getElementById("digits").className = "visual-box top";
-  setTimeout(() => digitToCSV.className = "visual-box center", 0);
+  document.getElementById("digits-box").className = "visual-box top";
+  setTimeout(() => CSVBox.className = "visual-box center", 0);
 
   $(".digit").each( (idx, digit) => {
     $(digit).off();
@@ -75,67 +71,72 @@ Visualizer.prototype.displayCSV = function(digit, digitCSV) {
 };
 
 Visualizer.prototype.showScaledCSV = function() {
-  let scaledCSVContainerEl = document.createElement("div");
-  scaledCSVContainerEl.id = "scaledCSVContainer";
-  scaledCSVContainerEl.className = "visual-box hidden";
+  let scaledCSVBox = document.createElement("div");
+  scaledCSVBox.id = "scaled-csv-box";
+  scaledCSVBox.className = "visual-box hidden";
 
   let scaledCSV = this.neuralNetwork.inputs.toArray().map( x => Math.floor(x * 100) / 100 ).join(",");
   let scaledCSVEl = document.createElement("div");
-  scaledCSVEl.id = "scaledCSVEl";
+  scaledCSVEl.id = "scaled-csv";
   scaledCSVEl.innerHTML = scaledCSV;
 
-  let groovyEl = document.createElement("div");
-  groovyEl.innerHTML = "Groovy";
-  groovyEl.id = "groovy";
-  groovyEl.className = "hoverable";
-  $(groovyEl).on("click", this.displayInputNodes.bind(this));
+  let groovyEl = this.makeNextButton("Groovy", this.displayInputNodes);
 
-  scaledCSVContainerEl.appendChild(scaledCSVEl);
-  scaledCSVContainerEl.appendChild(groovyEl);
+  scaledCSVBox.appendChild(scaledCSVEl);
+  scaledCSVBox.appendChild(groovyEl);
 
   this.headerEl.innerHTML = "each value is scaled between 0 and 1";
-  this.visualizationEl.appendChild(scaledCSVContainerEl);
-  this.slideAndHide(document.getElementById("digits"));
-  this.slideAndHide(document.getElementById("digit-to-csv"));
-  setTimeout(() => scaledCSVContainerEl.className = "visual-box center", 0);
+  this.visualizationEl.appendChild(scaledCSVBox);
+  this.slideAndHide(document.getElementById("digits-box"));
+  this.slideAndHide(document.getElementById("csv-box"));
+  setTimeout(() => scaledCSVBox.className = "visual-box center", 0);
 };
 
 Visualizer.prototype.displayInputNodes = function() {
-  let inputNodesContainerEl = document.createElement("div");
-  inputNodesContainerEl.id = "inputNodesContainer";
-  inputNodesContainerEl.className = "visual-box hidden";
+  let inputNodesBox = document.createElement("div");
+  inputNodesBox.id = "input-nodes-box";
+  inputNodesBox.className = "visual-box hidden";
 
-  let inputNodesEl = document.createElement("div");
-  inputNodesEl.id = "inputNodesEl";
-  let sampleNodeVals = this.neuralNetwork.sampleInputs(18);
+  let inputNodesList = document.createElement("div");
+  inputNodesList.id = "input-nodes-list";
+  let sampleNodeVals = this.neuralNetwork.sampleInputs(20);
 
-  for(let i = 0; i < 18; i++) {
+  for(let i = 0; i < 20; i++) {
     let nodeEl = document.createElement("div");
     nodeEl.className = "inputNode";
     let inputValue = document.createElement("p");
     inputValue.innerHTML = (Math.floor(sampleNodeVals[i] * 100) / 100);
     nodeEl.appendChild(inputValue);
-    inputNodesEl.appendChild(nodeEl);
+    inputNodesList.appendChild(nodeEl);
   }
-  let radEl = document.createElement("div");
-  radEl.id = "rad";
-  radEl.className = "hoverable";
-  radEl.innerHTML = "Rad";
 
-  inputNodesContainerEl.appendChild(inputNodesEl);
-  inputNodesContainerEl.appendChild(radEl);
+  let radEl = this.makeNextButton("Rad", () => console.log("Rad indeed"));
 
-  this.visualizationEl.appendChild(inputNodesContainerEl);
+  inputNodesBox.appendChild(inputNodesList);
+  inputNodesBox.appendChild(radEl);
+
+  this.visualizationEl.appendChild(inputNodesBox);
 
 
   this.headerEl.innerHTML = "the scaled values are supplied as the input to the first node layer (here's a small sample)";
-  this.slideAndHide(document.getElementById("scaledCSVContainer"));
-  setTimeout(() => inputNodesContainerEl.className = "visual-box center", 0);
+  this.slideAndHide(document.getElementById("scaled-csv-box"));
+  setTimeout(() => inputNodesBox.className = "visual-box center", 0);
+};
+
+Visualizer.prototype.displayHiddenNodes = function() {
 };
 
 Visualizer.prototype.slideAndHide = function(el) {
   el.className = "visual-box off-screen";
   setTimeout(() => el.remove(), 1000);
+};
+
+Visualizer.prototype.makeNextButton = function(buttonText, callback) {
+  let button = document.createElement("div");
+  button.className = "next-button hoverable";
+  button.innerHTML = buttonText;
+  $(button).on("click", callback.bind(this));
+  return button;
 };
 
 module.exports = Visualizer;
