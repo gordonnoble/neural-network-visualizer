@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded",
     let canvasEl = document.getElementById('canvas');
     let headerEl = document.getElementById('canvas-header');
     let visualizationEl = document.getElementById('visualization');
-    // let canvas = new Canvas(canvasEl, headerEl, visualizationEl);
 
     let vizy = new Visualizer(canvasEl, headerEl, visualizationEl, netty, testData);
   }

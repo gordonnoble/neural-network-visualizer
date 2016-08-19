@@ -1,3 +1,5 @@
+const Matrix = require('../neural_network/matrix.js');
+
 const Visualizer = function(canvasEl, headerEl, visualizationEl, neuralNetwork, testData) {
   this.canvasEl = canvasEl;
   this.headerEl = headerEl;
@@ -53,7 +55,7 @@ Visualizer.prototype.displayCSV = function(digit, digitCSV) {
   cool.id = "cool";
   cool.innerHTML = "cool";
   cool.className = "hoverable";
-  $(cool).on("click", this.displayInputNodes.bind(this));
+  $(cool).on("click", this.showScaledCSV.bind(this));
 
   digitToCSV.appendChild(digitEl);
   digitToCSV.appendChild(equalsEl);
@@ -72,36 +74,63 @@ Visualizer.prototype.displayCSV = function(digit, digitCSV) {
   });
 };
 
-Visualizer.prototype.displayInputNodes = function() {
-  let inputNodesEl = document.createElement("div");
-  inputNodesEl.className = "visual-box hidden";
-  let sampleNodeVals = this.neuralNetwork.sampleInputs(20);
+Visualizer.prototype.showScaledCSV = function() {
+  let scaledCSVContainerEl = document.createElement("div");
+  scaledCSVContainerEl.id = "scaledCSVContainer";
+  scaledCSVContainerEl.className = "visual-box hidden";
 
-  for(let i = 0; i < 20; i++) {
-    // let nodeEl = document.createElement("svg");
-    // nodeEl.className = "inputNode";
-    // $(nodeEl).attr("version", "1.1");
-    // $(nodeEl).attr("xmlns", "http://www.w3.org/2000/svg");
-    //
-    // $(nodeEl).attr("width", "120");
-    // $(nodeEl).attr("height", "120");
-    //
-    // let circle = document.createElement("circle");
-    // $(circle).attr("cx", "60");
-    // $(circle).attr("cy", "60");
-    // $(circle).attr("r", "50");
-    // $(circle).attr("stroke-width", "2");
-    // $(circle).attr("stroke", "black");
-    // circle.innerHTML = sampleNodeVals[i];
-    // nodeEl.appendChild(circle);
-    // inputNodesEl.appendChild(nodeEl);
-    $(inputNodesEl).append("<svg width='100' height='100'><circle cx='50' cy='50' r='40' stroke='black' stroke-width='1' fill='red' /></svg>");
-  }
+  let scaledCSV = this.neuralNetwork.inputs.toArray().map( x => Math.floor(x * 100) / 100 ).join(",");
+  let scaledCSVEl = document.createElement("div");
+  scaledCSVEl.id = "scaledCSVEl";
+  scaledCSVEl.innerHTML = scaledCSV;
 
-  this.visualizationEl.appendChild(inputNodesEl);
+  let groovyEl = document.createElement("div");
+  groovyEl.innerHTML = "Groovy";
+  groovyEl.id = "groovy";
+  groovyEl.className = "hoverable";
+  $(groovyEl).on("click", this.displayInputNodes.bind(this));
+
+  scaledCSVContainerEl.appendChild(scaledCSVEl);
+  scaledCSVContainerEl.appendChild(groovyEl);
+
+  this.headerEl.innerHTML = "each value is scaled between 0 and 1";
+  this.visualizationEl.appendChild(scaledCSVContainerEl);
   this.slideAndHide(document.getElementById("digits"));
-    this.slideAndHide(document.getElementById("digit-to-csv"));
-  setTimeout(() => inputNodesEl.className = "visual-box center", 0);
+  this.slideAndHide(document.getElementById("digit-to-csv"));
+  setTimeout(() => scaledCSVContainerEl.className = "visual-box center", 0);
+};
+
+Visualizer.prototype.displayInputNodes = function() {
+  let inputNodesContainerEl = document.createElement("div");
+  inputNodesContainerEl.id = "inputNodesContainer";
+  inputNodesContainerEl.className = "visual-box hidden";
+
+  let inputNodesEl = document.createElement("div");
+  inputNodesEl.id = "inputNodesEl";
+  let sampleNodeVals = this.neuralNetwork.sampleInputs(18);
+
+  for(let i = 0; i < 18; i++) {
+    let nodeEl = document.createElement("div");
+    nodeEl.className = "inputNode";
+    let inputValue = document.createElement("p");
+    inputValue.innerHTML = (Math.floor(sampleNodeVals[i] * 100) / 100);
+    nodeEl.appendChild(inputValue);
+    inputNodesEl.appendChild(nodeEl);
+  }
+  let radEl = document.createElement("div");
+  radEl.id = "rad";
+  radEl.className = "hoverable";
+  radEl.innerHTML = "Rad";
+
+  inputNodesContainerEl.appendChild(inputNodesEl);
+  inputNodesContainerEl.appendChild(radEl);
+
+  this.visualizationEl.appendChild(inputNodesContainerEl);
+
+
+  this.headerEl.innerHTML = "the scaled values are supplied as the input to the first node layer (here's a small sample)";
+  this.slideAndHide(document.getElementById("scaledCSVContainer"));
+  setTimeout(() => inputNodesContainerEl.className = "visual-box center", 0);
 };
 
 Visualizer.prototype.slideAndHide = function(el) {

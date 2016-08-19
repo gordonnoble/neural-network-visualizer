@@ -19,7 +19,7 @@ html, body {
 }
 
 #canvas-header {
-  margin: 80px 0 40px 0;
+  margin: 40px 0 40px 0;
   text-align: center;
 }
 
@@ -52,7 +52,7 @@ html, body {
 }
 
 .visual-box.off-screen {
-  top: -100%;
+  top: -100% !important;
   opacity: 0;
 }
 
@@ -104,7 +104,53 @@ html, body {
 }
 
 .inputNode {
-  /*width: 40px;
-  height: 40px;*/
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
   margin: 10px;
+  border-radius: 50%;
+  background-color: #FF3333;
+  text-align: center;
+}
+
+.inputNode p {
+  text-align: center;
+}
+
+#scaledCSVContainer {
+  top: 20%;
+}
+
+#scaledCSVEl {
+  padding: 20px;
+  width: 900px;
+  font-size: 10px;
+  word-break:break-all;
+  border-radius: 3px;
+  border: 1px solid #2f2f2f;
+}
+
+#groovy {
+  font-size: 48px;
+  padding: 0 20px;
+  border-radius: 3px;
+  margin: 50px;
+  transition: all 150ms ease-in-out !important;
+}
+
+inputNodesEl {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+#rad {
+  font-size: 48px;
+  padding: 0 20px;
+  border-radius: 3px;
+  margin: 50px;
+  transition: all 150ms ease-in-out !important;
 }
