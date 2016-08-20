@@ -487,6 +487,7 @@
 	  for(let i = 0; i < 20; i++) {
 	    let nodeEl = document.createElement("div");
 	    nodeEl.className = "input-node";
+	    nodeEl.id = `i${i}`;
 	    let inputValue = document.createElement("p");
 	    inputValue.innerHTML = (Math.floor(sampleNodeVals[i] * 100) / 100);
 	    nodeEl.appendChild(inputValue);
@@ -514,17 +515,16 @@
 	  for(let i = 0; i < 15; i ++) {
 	    let nodeEl = document.createElement("div");
 	    nodeEl.className = "hidden-node";
+	    nodeEl.id = `h${i}`;
 	    hiddenNodesList.appendChild(nodeEl);
 	  }
-
-	  $(".input-node").each( (idx, node) =>
-	    $(node).hover(this.connectToHiddenNodes.bind(this), this.removeConnectionsToHiddenNodes.bind(this))
-	  );
 
 	  let dopeEl = this.makeNextButton("Dope", this.fireInputNodes);
 
 	  Visualizer.appendChildren(hiddenNodesBox, hiddenNodesList, dopeEl);
 	  this.visualizationEl.appendChild(hiddenNodesBox);
+
+	  this.connectInputToHidden();
 
 	  this.headerEl.innerHTML = "the input layer is connected to a second layer of nodes, and each connection is weighted differently";
 	  document.getElementById("rad").remove();
@@ -536,35 +536,62 @@
 	Visualizer.prototype.fireInputNodes = function() {
 	  let hiddenInputs = this.neuralNetwork.sampleHiddenInputs;
 
-	  $(".hidden-node").each( (hiddenIdx, node) => {
+	  $(".hidden-node").each( (hIdx, hNode) => {
 	    let value = document.createElement("p");
-	    value.innerHTML = (Math.floor(hiddenInputs[hiddenIdx] * 100) / 100);
-	    node.appendChild(value);
+	    value.innerHTML = (Math.floor(hiddenInputs[hIdx] * 100) / 100);
+	    hNode.appendChild(value);
 	  });
 	};
 
-	Visualizer.prototype.connectToHiddenNodes = function(event) {
-	  let nodeEl = event.target;
-	  let x1 = nodeEl.getBoundingClientRect().left + ($(nodeEl).width() / 2);
-	  let y1 = nodeEl.getBoundingClientRect().bottom - ($(nodeEl).height() / 8);
-	  let inputIdx = $(nodeEl).index();
+	Visualizer.prototype.connectInputToHidden = function() {
 	  let sampleWIH = this.neuralNetwork.sampleWIH;
-
 	  let wihEl = d3.select('body').append("svg");
 	  wihEl.attr("id", "wih");
 
-	  $('.hidden-node').each( (hiddenIdx, node) => {
-	    let x2 = node.getBoundingClientRect().left + ($(nodeEl).width() / 2);
-	    let y2 = node.getBoundingClientRect().top + ($(nodeEl).height() / 8);
+	  $('.input-node').each( (iIdx, iNode) => {
+	    // $(iNode).on("hover", this.drawPaths, this.hidePaths);
+	    iNode.addEventListener("mouseenter", this.drawPaths);
+	    iNode.addEventListener("mouseout", this.hidePaths);
+	    $('.hidden-node').each( (hIdx, hNode) => {
+	      // $(hNode).on("hover", this.drawPaths, this.hidePaths);
+	      hNode.addEventListener("mouseenter", this.drawPaths);
+	      hNode.addEventListener("mouseout", this.hidePaths);
 
-	    let color = Math.floor(sampleWIH.get(hiddenIdx, inputIdx) * 360) + 160;
+	      let color = Math.floor(sampleWIH.get(hIdx, iIdx) * 360) + 160;
 
-	    let path = wihEl.append("line")
-	                      .attr("x1", x1).attr("y1", y1)
-	                      .attr("x2", x2).attr("y2", y2)
-	                      .attr("stroke-width", 4)
-	                      .attr("stroke", `rgb(240,${color},75)`);
-	    path.attr("className", "wih-path");
+	      let path = wihEl.append("line")
+	        .attr("stroke-width", 4)
+	        .attr("stroke", `rgb(240,${color},75)`)
+	        .data([`i${iIdx} h${hIdx}`]).enter();
+	    });
+	  });
+
+	};
+
+	Visualizer.prototype.drawPaths = function(event) {
+	  let source = event.target;
+	  if (source.id === "" ) { source = source.parentElement; }
+	  let x1 = source.getBoundingClientRect().left + ($(source).width() / 2);
+	  let y1 = source.getBoundingClientRect().bottom - ($(source).height() / 2);
+
+	  let paths = d3.selectAll('line').filter( d => d.includes(source.id) );
+	  paths.each( (d, i, paths) => {
+	    let targetId = d.split(" ").filter( el => el !== source.id)[0];
+	    let target = $(`#${targetId}`)[0];
+
+	    let x2 = target.getBoundingClientRect().left + ($(target).width() / 2);
+	    let y2 = target.getBoundingClientRect().top + ($(target).height() / 2);
+	    d3.select(paths[i]).attr("x1", x1).attr("y1", y1).attr("x2", x2).attr("y2", y2).attr("stroke-width", 4);
+	  });
+	};
+
+	Visualizer.prototype.hidePaths = function(event) {
+	  let source = event.target;
+	  if (source.id === "" ) { source = source.parentElement; }
+
+	  let paths = d3.selectAll('line').filter( d => d.includes(source.id) );
+	  paths.each( (d, i, paths) => {
+	    d3.select(paths[i]).attr("stroke-width", 0);
 	  });
 	};
 

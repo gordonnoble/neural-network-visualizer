@@ -166,13 +166,17 @@ html, body {
 
 #wih {
   position: absolute;
-  z-index: -1;
+  z-index: -100;
   top: 0px;
   left: 0px;
   width: 100%;
   height: 100%;
 }
 
-.wih-path {
+.path {
+  display: none;
+}
 
+.path.show {
+  display: block;
 }
