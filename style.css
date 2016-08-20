@@ -19,8 +19,16 @@ html, body {
 }
 
 #canvas-header {
-  margin: 40px auto;
+  margin-top: 40px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+#canvas-header h1 {
   padding: 10px 20px;
+  margin: 0 40px;
   text-align: center;
   border-radius: 4px;
   background-color: #FF3333;
@@ -46,17 +54,21 @@ html, body {
 
 .visual-box.top {
   top: 0%;
-  /*opacity: 0.4;*/
 }
 
 .visual-box.center {
-  top: 30%;
+  top: 50%;
+  transform: translateY(-50%);
   opacity: 1;
 }
 
 .visual-box.off-screen {
   top: -100% !important;
   opacity: 0;
+}
+
+.visual-box.bottom {
+  top: 66%;
 }
 
 .digit {
@@ -102,11 +114,11 @@ html, body {
 }
 
 .next-button {
+  margin: 0 40px;
   font-size: 48px;
   padding: 0 20px;
   border-radius: 3px;
   border: 1px solid black;
-  margin: 50px;
   transition: all 150ms ease-in-out !important;
   background-color: white;
 }
@@ -119,16 +131,12 @@ html, body {
   height: 40px;
   margin: 10px;
   border-radius: 50%;
-  background-color: #FF3333;
   text-align: center;
+  border: 1px solid black;
 }
 
 .inputNode p {
   text-align: center;
-}
-
-#scaled-csv-box {
-  top: 20%;
 }
 
 #scaled-csv {
@@ -146,6 +154,7 @@ html, body {
   flex-direction: row;
   justify-content: center;
   align-items: center;
+  margin: 20px 0;
 }
 
 .hidden-node {
@@ -156,8 +165,8 @@ html, body {
   height: 40px;
   margin: 10px;
   border-radius: 50%;
-  background-color: #ff4d4d;
   text-align: center;
+  border: 1px solid black;
 }
 
 .hidden-node p {
