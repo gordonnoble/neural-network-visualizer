@@ -57,7 +57,7 @@ Visualizer.prototype.displayCSV = function(digit, digitCSV) {
 
   this.visualizationEl.appendChild(CSVBox);
 
-  $("#canvas-header h1").html("each pixel's greyscale value, presented in a CSV format");
+  $("#title").html("each pixel's greyscale value, presented in a CSV format");
   Visualizer.prototype.slideAndHide(document.getElementById("digits-box"));
   setTimeout(() => CSVBox.className = "visual-box center", 0);
 
@@ -84,7 +84,7 @@ Visualizer.prototype.showScaledCSV = function() {
   Visualizer.appendChildren(scaledCSVBox, scaledCSVEl);
   $("#canvas-header").append(groovyEl);
 
-  $("#canvas-header h1").html("each value is scaled between 0 and 1");
+  $("#title").html("each value is scaled between 0 and 1");
   this.visualizationEl.appendChild(scaledCSVBox);
   this.slideAndHide(document.getElementById("csv-box"));
   setTimeout(() => scaledCSVBox.className = "visual-box center", 0);
@@ -103,12 +103,12 @@ Visualizer.prototype.displayInputNodes = function() {
 
   for(let i = 0; i < 20; i++) {
     let nodeEl = document.createElement("div");
-    nodeEl.className = "input-node";
+    nodeEl.className = "input node";
     nodeEl.id = `i${i}`;
     let inputValue = document.createElement("p");
-    inputValue.innerHTML = (Math.floor(sampleNodeVals[i] * 100) / 100);
-    let color = Math.floor(sampleNodeVals[i] * 255);
-    $(nodeEl).attr("style", `background-color:rgb(240,${color},75)`);
+    inputValue.innerHTML = Math.floor(sampleNodeVals[i] * 100) / 100;
+    let color = 200 - Math.floor(sampleNodeVals[i] * 200);
+    $(nodeEl).attr("style", `background-color:rgb(${color},${color},${color})`);
     nodeEl.appendChild(inputValue);
     inputNodesList.appendChild(nodeEl);
   }
@@ -119,7 +119,7 @@ Visualizer.prototype.displayInputNodes = function() {
   this.visualizationEl.appendChild(inputNodesBox);
   $("#canvas-header").append(radEl);
 
-  $("#canvas-header h1").html("the scaled values are supplied as the input to the first node layer (here's a small sample)");
+  $("#title").html("the scaled values are supplied as the input to the first node layer\n(here's a small sample)");
   this.slideAndHide(document.getElementById("scaled-csv-box"));
   setTimeout(() => inputNodesBox.className = "visual-box center", 0);
 };
@@ -137,7 +137,7 @@ Visualizer.prototype.displayHiddenNodes = function() {
 
   for(let i = 0; i < 15; i ++) {
     let nodeEl = document.createElement("div");
-    nodeEl.className = "hidden-node";
+    nodeEl.className = "hidden node";
     nodeEl.id = `h${i}`;
     $(nodeEl).attr("style", "background-color:#FFFFFF;border:1px solid black");
     hiddenNodesList.appendChild(nodeEl);
@@ -149,9 +149,9 @@ Visualizer.prototype.displayHiddenNodes = function() {
   this.visualizationEl.appendChild(hiddenNodesBox);
   $("#canvas-header").append(dopeEl);
 
-  this.connectInputToHidden();
+  this.connectLayers('input', 'hidden', this.neuralNetwork.sampleWIH);
 
-  $("#canvas-header h1").html("the input layer is connected to a second layer of nodes, and each connection is weighted differently");
+  $("#title").html("the input layer is connected to a second layer of nodes via weighted connections");
   document.getElementById("input-nodes-box").className = "visual-box top";
   setTimeout(() => hiddenNodesBox.className = "visual-box center", 0);
 };
@@ -162,7 +162,7 @@ Visualizer.prototype.fireInputNodes = function() {
 
   let hiddenInputs = this.neuralNetwork.sampleHiddenInputs;
 
-  let selection = $(".hidden-node");
+  let selection = $(".node.hidden");
   let i = 0;
 
   let firing = setInterval( () => {
@@ -177,33 +177,164 @@ Visualizer.prototype.fireInputNodes = function() {
     i++;
   }, 500);
 
-  this.showOutputNodes();
+  let awesomeEl = this.makeNextButton("Awesome", this.sigmoidHiddenNodes);
+  $("#canvas-header").append(awesomeEl);
+
+  $("#title").html("each node in the second layer sums the weighted inputs from the first layer");
+};
+
+Visualizer.prototype.sigmoidHiddenNodes = function() {
+  $("#awesome").remove();
+
+  let hiddenOutputs = this.neuralNetwork.sampleHiddenOutputs;
+
+  $(".node.hidden").each( (idx, node) => {
+    node.children[0].innerHTML = Math.floor(hiddenOutputs[idx] * 100) / 100;
+  });
+
+  let niceEl = this.makeNextButton("Nice", this.showOutputNodes);
+  $("#canvas-header").append(niceEl);
+
+  $("#title").html("each value is then scaled between 0 and 1 using the sigmoid function");
 };
 
 Visualizer.prototype.showOutputNodes = function() {
-  
+  $("#nice").remove();
+  $("p").remove();
+
+  let outputNodesBox = document.createElement("div");
+  outputNodesBox.id = "output-nodes-box";
+  outputNodesBox.className = "visual-box hidden";
+
+  let outputNodesList = document.createElement("div");
+  outputNodesList.className = "node-list";
+
+  for(let i = 0; i < 10; i ++) {
+    let nodeEl = document.createElement("div");
+    nodeEl.className = "output node";
+    nodeEl.id = `o${i}`;
+    $(nodeEl).attr("style", "background-color:#FFFFFF;border:1px solid black");
+    outputNodesList.appendChild(nodeEl);
+  }
+
+  let swellEl = this.makeNextButton("Swell", this.fireHiddenNodes);
+
+  Visualizer.appendChildren(outputNodesBox, outputNodesList);
+  this.visualizationEl.appendChild(outputNodesBox);
+  $("#canvas-header").append(swellEl);
+
+  this.connectLayers('hidden', 'output', this.neuralNetwork.sampleWHO);
+
+  $("#title").html("a third and final layer of nodes is connected to the second");
+  setTimeout(() => outputNodesBox.className = "visual-box bottom", 0);
 };
 
-Visualizer.prototype.connectInputToHidden = function() {
-  let sampleWIH = this.neuralNetwork.sampleWIH;
-  let wihEl = d3.select('body').append("svg");
-  wihEl.attr("id", "wih");
 
-  $('.input-node').each( (iIdx, iNode) => {
-    $(iNode).hover(this.drawPaths, this.hidePaths);
+Visualizer.prototype.fireHiddenNodes = function() {
+  $("#swell").remove();
 
-    $('.hidden-node').each( (hIdx, hNode) => {
-      $(hNode).hover(this.drawPaths, this.hidePaths);
+  let finalInputs = this.neuralNetwork.finalInputs.toArray();;
+  let selection = $(".node.output");
+  let i = 0;
 
-      let color = Math.floor(sampleWIH.get(hIdx, iIdx) * 360) + 160;
+  let firing = setInterval( () => {
+    $(selection[i - 1]).trigger('mouseout');
+    if (i === selection.length) { window.clearInterval(firing); }
+    let value = document.createElement("p");
+    value.innerHTML = (Math.floor(finalInputs[i] * 100) / 100);
+    let color = Math.floor(finalInputs[i] * 360) + 160;
+    $(selection[i]).trigger('mouseover');
+    $(selection[i]).attr("style", `background-color:rgb(240,${color},75)`);
+    selection[i].appendChild(value);
+    i++;
+  }, 500);
 
-      let path = wihEl.append("line")
-        .attr("stroke-width", 4)
-        .attr("stroke", `rgb(240,${color},75)`)
-        .data([`i${iIdx} h${hIdx}`]).enter();
-    });
+  let stellarEl = this.makeNextButton("Stellar", this.sigmoidOutputNodes);
+  $("#canvas-header").append(stellarEl);
+
+  $("#title").html("each node in the third layer sums the weighted inputs from the second layer");
+};
+
+Visualizer.prototype.sigmoidOutputNodes = function() {
+  $("#stellar").remove();
+
+  let finalOutputs = this.neuralNetwork.finalOutputs.toArray();
+
+  $(".node.output").each( (idx, node) => {
+    node.children[0].innerHTML = Math.floor(finalOutputs[idx] * 100) / 100;
   });
 
+  let fantasticEl = this.makeNextButton("Fantastic", this.clearTopLayers.bind(this));
+  $("#canvas-header").append(fantasticEl);
+
+  $("#title").html("again, each value is scaled between 0 and 1 using the sigmoid function");
+};
+
+Visualizer.prototype.clearTopLayers = function() {
+  $("#fantastic").remove();
+
+  this.slideAndHide(document.getElementById("input-nodes-box"));
+  this.slideAndHide(document.getElementById("hidden-nodes-box"), this.showAnswer);
+  $(".node.output").off();
+  $("#output-nodes-box").attr('class', 'visual-box center');
+};
+
+Visualizer.prototype.showAnswer = function() {
+  let digits = document.createElement("div");
+  digits.id = "answer-digits";
+  let digitY = $("#output-nodes-box").get(0).getBoundingClientRect().bottom;
+
+  [...Array(10).keys()].forEach( idx => {
+    let digit = document.createElement("div");
+    digit.className = "answer-digit";
+    digit.innerHTML = idx;
+    let digitX = $(`#o${idx}`).get(0).getBoundingClientRect().left;
+    $(digit).attr("style", `top:${digitY}px;left:${digitX}px`);
+    digits.appendChild(digit);
+  });
+
+  let chosenDigit = this.neuralNetwork.chosenDigit;
+  let chosenNodeCoords = this.answerNode().get(0).getBoundingClientRect();
+  let chosenX = chosenNodeCoords.left;
+  let chosenY = chosenNodeCoords.top;
+
+  let arrowBox = document.createElement("div");
+  arrowBox.id = "arrow-box";
+  let arrowEl = document.createElement("div");
+  arrowEl.className = "arrow";
+  arrowEl.innerHTML = `I think that was a ${chosenDigit}`;
+  arrowBox.appendChild(arrowEl);
+  $(arrowBox).attr("style", `top:${chosenY}px;left:${chosenX}px;transform:translateY(-200%) translateX(-40%)`);
+
+  $('body').append(digits);
+  $('body').append(arrowBox);
+
+  $("#title").html("the highest-value node corresponds to the answer");
+};
+
+Visualizer.prototype.answerNode = function() {
+  let answer = this.neuralNetwork.chosenDigit;
+  return $(`#o${answer}`);
+};
+
+Visualizer.prototype.connectLayers = function(firstClass, secondClass, weightsMatrix) {
+  let weightsEl = d3.select('body').append("svg");
+  weightsEl.attr("class", "weights-matrix");
+
+  $(`.node.${firstClass}`).each( (idxI, nodeI) => {
+    $(nodeI).hover(this.drawPaths, this.hidePaths);
+
+    $(`.node.${secondClass}`).each( (idxJ, nodeJ) => {
+      $(nodeJ).hover(this.drawPaths, this.hidePaths);
+
+      let color = Math.floor(weightsMatrix.get(idxJ, idxI) * 360) + 160;
+
+      let path = weightsEl.append("line")
+        .attr("stroke-width", 4)
+        .attr("stroke", `rgb(240,${color},75)`)
+        .data([`${firstClass[0]}${idxI} ${secondClass[0]}${idxJ}`]).enter();
+    });
+  });
 };
 
 Visualizer.prototype.drawPaths = function(event) {
@@ -212,7 +343,8 @@ Visualizer.prototype.drawPaths = function(event) {
   let x1 = source.getBoundingClientRect().left + ($(source).width() / 2);
   let y1 = source.getBoundingClientRect().bottom - ($(source).height() / 2);
 
-  let paths = d3.selectAll('line').filter( d => d.includes(source.id) );
+  let regexp = new RegExp("\\b(" + source.id + ")\\b");
+  let paths = d3.selectAll('line').filter( d => d.match(regexp) );
   paths.each( (d, i, paths) => {
     let targetId = d.split(" ").filter( el => el !== source.id)[0];
     let target = $(`#${targetId}`)[0];
@@ -227,23 +359,27 @@ Visualizer.prototype.hidePaths = function(event) {
   let source = event.target;
   if (source.id === "" ) { source = source.parentElement; }
 
-  let paths = d3.selectAll('line').filter( d => d.includes(source.id) );
+  let regexp = new RegExp("\\b(" + source.id + ")\\b");
+  let paths = d3.selectAll('line').filter( d => d.match(regexp) );
   paths.each( (d, i, paths) => {
     d3.select(paths[i]).attr("stroke-width", 0);
   });
 };
 
-Visualizer.prototype.removeConnectionsToHiddenNodes = function(event) {
-  document.getElementById('wih').remove();
-};
-
-Visualizer.prototype.slideAndHide = function(el) {
+Visualizer.prototype.slideAndHide = function(el, callback) {
   el.className = "visual-box off-screen";
-  setTimeout(() => el.remove(), 1000);
+
+  setTimeout(() => {
+    el.remove();
+
+    if (callback !== undefined) {
+      callback.call(this);
+    }
+  }, 1000);
 };
 
 Visualizer.prototype.makeNextButton = function(buttonText, callback) {
-  let button = document.createElement("div");
+  let button = document.createElement("h1");
   button.className = "next-button hoverable";
   button.id = `${buttonText.toLowerCase()}`;
   button.innerHTML = buttonText;

@@ -92,8 +92,7 @@ NeuralNetwork.prototype.interpret = function(digitCSV) {
   let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
 
   let outputs = this.query(inputs).toArray();
-  let chosenDigit = outputs.indexOf(Math.max(...outputs));
-  return chosenDigit;
+  this.chosenDigit = outputs.indexOf(Math.max(...outputs));
 };
 
 NeuralNetwork.prototype.prepSample = function(numSampleInputs, numSampleHiddenInputs) {
@@ -101,6 +100,7 @@ NeuralNetwork.prototype.prepSample = function(numSampleInputs, numSampleHiddenIn
     this.sampleHiddenInputs = [];
     this.sampleHiddenOutputs = [];
     this.sampleWIH = new Matrix(numSampleHiddenInputs, numSampleInputs);
+    this.sampleWHO = new Matrix(this.numOutputNodes, numSampleHiddenInputs);
 
     let sampleInputIdxs = NeuralNetwork.randomIdxs(this.numInputNodes, numSampleInputs);
     let sampleHiddenIdxs = NeuralNetwork.randomIdxs(this.numHiddenNodes, numSampleHiddenInputs);
@@ -109,17 +109,21 @@ NeuralNetwork.prototype.prepSample = function(numSampleInputs, numSampleHiddenIn
     let hiddenInputs = this.hiddenInputs.toArray();
     let hiddenOutputs = this.hiddenOutputs.toArray();
 
-    sampleInputIdxs.forEach( (inputIdx, i) => {
-      this.sampleInputs.push(inputs[inputIdx]);
+    sampleInputIdxs.forEach( (iIdx, i) => {
+      this.sampleInputs.push(inputs[iIdx]);
 
-      sampleHiddenIdxs.forEach( (hiddenIdx, j) => {
-        this.sampleWIH.set(j, i, this.wih.get(hiddenIdx, inputIdx));
+      sampleHiddenIdxs.forEach( (hIdx, j) => {
+        this.sampleWIH.set(j, i, this.wih.get(hIdx, iIdx));
       });
     });
 
-    sampleHiddenIdxs.forEach( hiddenIdx => {
-      this.sampleHiddenInputs.push(hiddenInputs[hiddenIdx]);
-      this.sampleHiddenOutputs.push(hiddenOutputs[hiddenIdx]);
+    sampleHiddenIdxs.forEach( (hIdx, i) => {
+      this.sampleHiddenInputs.push(hiddenInputs[hIdx]);
+      this.sampleHiddenOutputs.push(hiddenOutputs[hIdx]);
+
+      [...Array(10).keys()].forEach( (oIdx, j) => {
+        this.sampleWHO.set(j, i, this.who.get(oIdx, hIdx));
+      });
     });
 };
 
