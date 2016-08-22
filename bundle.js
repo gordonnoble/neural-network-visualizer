@@ -52,13 +52,13 @@
 	    let trainingData = document.getElementById('training-data').innerHTML;
 	    let testData = document.getElementById('test-data').innerHTML;
 	    let netty = new NeuralNetwork(784, 100, 10, 0.1);
-	    netty.learn(trainingData);
+	    // netty.learn(trainingData);
 
 	    let canvasEl = document.getElementById('canvas');
 	    let headerEl = document.getElementById('canvas-header');
 	    let visualizationEl = document.getElementById('visualization');
 
-	    let vizy = new Visualizer(canvasEl, headerEl, visualizationEl, netty, testData);
+	    let vizy = new Visualizer(canvasEl, headerEl, visualizationEl, netty, trainingData, testData);
 	  }
 	);
 
@@ -136,7 +136,7 @@
 	  console.log(this.count);
 	};
 
-	NeuralNetwork.prototype.learn = function(data) {
+	NeuralNetwork.prototype.learn = function(data, callback) {
 	  let trainingDigits = data.split(/\r?\n/);
 
 	  let i = 0;
@@ -154,6 +154,8 @@
 	    });
 	    i++;
 	  }
+
+	  callback();
 	};
 
 	NeuralNetwork.prototype.interpret = function(digitCSV) {
@@ -391,17 +393,43 @@
 
 	const Matrix = __webpack_require__(3);
 
-	const Visualizer = function(canvasEl, headerEl, visualizationEl, neuralNetwork, testData) {
+	const Visualizer = function(canvasEl, headerEl, visualizationEl, neuralNetwork, trainingData, testData) {
 	  this.canvasEl = canvasEl;
 	  this.visualizationEl = visualizationEl;
 	  this.neuralNetwork = neuralNetwork;
 	  this.testDigits = testData.split(/\r?\n/);
 
-	  this.displayNumberPicker();
+	  this.beginTraining(trainingData);
+	};
+
+	Visualizer.prototype.beginTraining = function(trainingData) {
+	  $("#title").html("one minute while the neural network trains...");
+	  let thinkingEl = this.drawLoadingElement();
+
+	  let startVisualization = function() {
+	    thinkingEl.remove();
+	    this.displayNumberPicker();
+	  };
+
+	  setTimeout( () => this.neuralNetwork.learn(trainingData, startVisualization.bind(this)), 200);
+	};
+
+	Visualizer.prototype.drawLoadingElement = function() {
+	  let thinkingEl = document.createElement("div");
+	  thinkingEl.className = "sk-cube-grid";
+
+	  [...Array(9).keys()].forEach( idx => {
+	    let squareEl = document.createElement("div");
+	    squareEl.className = `sk-cube sk-cube${idx + 1}`;
+	    thinkingEl.appendChild(squareEl);
+	  });
+
+	  document.querySelector('body').appendChild(thinkingEl);
+	  return thinkingEl;
 	};
 
 	Visualizer.prototype.displayNumberPicker = function() {
-	  $("#canvas-header h1").html("pick a number");
+	  $("#canvas-header h1").html("ok, pick a number");
 	  let digitsBox = document.createElement("div");
 	  digitsBox.id = "digits-box";
 	  digitsBox.className = "visual-box center";

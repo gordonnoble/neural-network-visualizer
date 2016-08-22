@@ -1,16 +1,42 @@
 const Matrix = require('../neural_network/matrix.js');
 
-const Visualizer = function(canvasEl, headerEl, visualizationEl, neuralNetwork, testData) {
+const Visualizer = function(canvasEl, headerEl, visualizationEl, neuralNetwork, trainingData, testData) {
   this.canvasEl = canvasEl;
   this.visualizationEl = visualizationEl;
   this.neuralNetwork = neuralNetwork;
   this.testDigits = testData.split(/\r?\n/);
 
-  this.displayNumberPicker();
+  this.beginTraining(trainingData);
+};
+
+Visualizer.prototype.beginTraining = function(trainingData) {
+  $("#title").html("one minute while the neural network trains...");
+  let thinkingEl = this.drawLoadingElement();
+
+  let startVisualization = function() {
+    thinkingEl.remove();
+    this.displayNumberPicker();
+  };
+
+  setTimeout( () => this.neuralNetwork.learn(trainingData, startVisualization.bind(this)), 200);
+};
+
+Visualizer.prototype.drawLoadingElement = function() {
+  let thinkingEl = document.createElement("div");
+  thinkingEl.className = "sk-cube-grid";
+
+  [...Array(9).keys()].forEach( idx => {
+    let squareEl = document.createElement("div");
+    squareEl.className = `sk-cube sk-cube${idx + 1}`;
+    thinkingEl.appendChild(squareEl);
+  });
+
+  document.querySelector('body').appendChild(thinkingEl);
+  return thinkingEl;
 };
 
 Visualizer.prototype.displayNumberPicker = function() {
-  $("#canvas-header h1").html("pick a number");
+  $("#canvas-header h1").html("ok, pick a number");
   let digitsBox = document.createElement("div");
   digitsBox.id = "digits-box";
   digitsBox.className = "visual-box center";

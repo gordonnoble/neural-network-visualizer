@@ -67,7 +67,7 @@ NeuralNetwork.prototype.train = function(inputs, targets) {
   console.log(this.count);
 };
 
-NeuralNetwork.prototype.learn = function(data) {
+NeuralNetwork.prototype.learn = function(data, callback) {
   let trainingDigits = data.split(/\r?\n/);
 
   let i = 0;
@@ -85,6 +85,8 @@ NeuralNetwork.prototype.learn = function(data) {
     });
     i++;
   }
+
+  callback();
 };
 
 NeuralNetwork.prototype.interpret = function(digitCSV) {
