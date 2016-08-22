@@ -6,7 +6,6 @@ let NeuralNetwork = function(numInputNodes, numHiddenNodes, numOutputNodes, lear
   this.numHiddenNodes = numHiddenNodes;
   this.numOutputNodes = numOutputNodes;
   this.learningRate = learningRate;
-  this.count = 0;
 
   let stdDev = Math.pow(this.numHiddenNodes, -0.5);
   this.wih = new Matrix(this.numHiddenNodes, this.numInputNodes);
@@ -63,8 +62,6 @@ NeuralNetwork.prototype.train = function(inputs, targets) {
   let wihCorrections = hiddenErrors.times(hiddenOutputs).times(invHiddenOut);
   wihCorrections = wihCorrections.dot(inputs.transpose()).map( x => x * this.learningRate );
   this.wih = this.wih.map( (x, i, j) => x + wihCorrections.get(i, j));
-  this.count++;
-  console.log(this.count);
 };
 
 NeuralNetwork.prototype.learn = function(data, callback) {
