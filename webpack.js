@@ -403,7 +403,7 @@
 	};
 
 	Visualizer.prototype.beginTraining = function(trainingData) {
-	  $("#title").html("one minute while the neural network trains...");
+	  $("#title").html("one minute, getting up to speed...");
 	  let thinkingEl = this.drawLoadingElement();
 
 	  let startVisualization = function() {
