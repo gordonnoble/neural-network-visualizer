@@ -392,15 +392,15 @@
 	};
 
 	Visualizer.prototype.beginTraining = function(trainingData) {
-	  this.titleSpace.html('one minute, getting up to speed...');
-	  let thinkingEl = this.drawLoadingElement();
+	  // this.titleSpace.html('one minute, getting up to speed...');
+	  // let thinkingEl = this.drawLoadingElement();
 
-	  let startVisualization = function() {
-	    thinkingEl.remove();
+	  // let startVisualization = function() {
+	  //   thinkingEl.remove();
 	    this.displayNumberPicker();
-	  };
+	  // };
 
-	  setTimeout( () => this.neuralNetwork.learn(trainingData, startVisualization.bind(this)), 200);
+	  // setTimeout( () => this.neuralNetwork.learn(trainingData, startVisualization.bind(this)), 200);
 	};
 
 	Visualizer.prototype.drawLoadingElement = function() {
@@ -443,59 +443,40 @@
 	};
 
 	Visualizer.prototype.displayCSV = function(digit, digitCSV) {
-	  let CSVBox = document.createElement('div');
-	  CSVBox.className = 'visual-box hidden';
-	  CSVBox.id = 'csv-box';
+	  const greyscaleMap = d3.scaleLinear()
+	                          .domain([0, 255])
+	                          .range(["#FFFFFF", "#000000"]);
 
-	  let digitEl = document.createElement('div');
-	  digitEl.id = 'digit';
-	  digitEl.innerHTML = digit;
-
-	  let equalsEl = document.createElement('div');
-	  equalsEl.id = 'equals';
-
-	  let colorFunc = function(pixelVal) {
-	    return Math.floor(255 - pixelVal);
-	  };
-	  let csvEl = Visualizer.makeCSVEl(digitCSV.slice(2, digitCSV.length), colorFunc);
+	  Visualizer.drawImage(digitCSV.slice(2, digitCSV.length), greyscaleMap);
 
 	  let coolEl = this.makeNextButton('Cool', this.showScaledCSV);
-
-	  Visualizer.injectElements(CSVBox, digitEl, equalsEl, csvEl);
 	  this.headerSpace.append(coolEl);
-	  this.workSpace.append(CSVBox);
 
 	  this.titleSpace.html('we break each image down into greyscale values between 0 and 255');
 	  this.slideAndHide(document.getElementById('digits-box'));
-	  setTimeout(() => CSVBox.className = 'visual-box center', 0);
 	};
 
 	Visualizer.prototype.showScaledCSV = function() {
 	  Visualizer.removeNextButton();
+	  $('#csv-box').remove();
 
-	  let scaledCSVBox = document.createElement('div');
-	  scaledCSVBox.id = 'csv-box';
-	  scaledCSVBox.className = 'visual-box hidden';
-
-	  let colorFunc = function(pixelVal) {
-	    return Math.floor(255 - (255 * pixelVal));
-	  };
 	  let scaledCSV = this.neuralNetwork.inputs.toArray().map( x => Math.floor(x * 100) / 100 ).join(',');
-	  let scaledCSVEl = Visualizer.makeCSVEl(scaledCSV, colorFunc);
 
-	  let groovyEl = this.makeNextButton('Groovy', this.displayInputNodes);
+	  const greyscaleMap = d3.scaleLinear()
+	                          .domain([0.01, 0.99])
+	                          .range(["#FFFFFF", "#000000"]);
 
-	  Visualizer.injectElements(scaledCSVBox, scaledCSVEl);
-	  this.headerSpace.append(groovyEl);
+	  let scaledCSVEl = Visualizer.drawImage(scaledCSV, greyscaleMap);
 
+	  this.headerSpace.append(this.makeNextButton('Groovy', this.displayInputNodes));
 	  this.titleSpace.html('each value is scaled between 0 and 1 (exclusive)');
-	  this.workSpace.append(scaledCSVBox);
-	  this.fadeAndHide(document.getElementById('csv-box'));
-	  setTimeout(() => scaledCSVBox.className = 'visual-box center', 0);
 	};
+
 
 	Visualizer.prototype.displayInputNodes = function() {
 	  Visualizer.removeNextButton();
+	  $('#csv-box').remove();
+
 	  let inputNodesBox = document.createElement('div');
 	  inputNodesBox.id = 'input-nodes-box';
 	  inputNodesBox.className = 'visual-box hidden';
@@ -508,10 +489,11 @@
 	    let nodeEl = document.createElement('div');
 	    nodeEl.className = 'input node';
 	    nodeEl.id = `i${i}`;
-	    let inputValue = document.createElement('p');
-	    inputValue.innerHTML = Math.floor(sampleNodeVals[i] * 100) / 100;
 	    let color = 200 - Math.floor(sampleNodeVals[i] * 200);
 	    $(nodeEl).attr('style', `background-color:rgb(${color},${color},${color})`);
+
+	    let inputValue = document.createElement('p');
+	    inputValue.innerHTML = Math.floor(sampleNodeVals[i] * 100) / 100;
 	    nodeEl.appendChild(inputValue);
 	    inputNodesList.appendChild(nodeEl);
 	  }
@@ -734,31 +716,44 @@
 	  return $(`#o${answer}`);
 	};
 
-	Visualizer.makeCSVEl = function(csv, colorFunc) {
-	  csv = csv.split(",");
-	  let csvEl = document.createElement('div');
-	  csvEl.className = "csv-box";
+	Visualizer.drawImage = function(csv, colorFunc) {
+	  csv = csv.split(",").map( val => parseFloat(val) );
+	  let image = d3.select('body')
+	                  .append("svg")
+	                  .attr("height", 400)
+	                  .attr("width", 300)
+	                  .attr("id", 'csv-box');
 
-	  let row = document.createElement('div');
-	  row.className = 'csv-row';
-	  csv.forEach( (pixelVal, i) => {
-	    if (i % 28 === 0 && i > 0) {
-	      csvEl.appendChild(row);
-	      row = document.createElement('div');
-	      row.className = "csv-row";
-	    }
+	  let xFunc = function(d, i) {
+	    return Math.floor(12*(i % 28));
+	  };
+	  let yFunc = function(d, i) {
+	    return (16*Math.floor(i / 28));
+	  };
+	  image.selectAll('rect')
+	      .data(csv)
+	      .enter()
+	      .append('rect')
+	      .attr("x", (d, i) => xFunc(d, i))
+	      .attr("y", (d, i) => yFunc(d, i))
+	      .attr("height", 16)
+	      .attr("width", 12)
+	      .style("fill", d => colorFunc(d))
+	      .on('mouseover', (d, i, rect) => Visualizer.floatValue(d, i, rect))
+	      .on('mouseout', (d, i, rect) => Visualizer.removeFloat(d, i, rect));
+	};
 
-	    pixelVal = Math.floor(parseFloat(pixelVal) * 100) / 100;
-	    let rowItem = document.createElement('div');
-	    rowItem.className = "csv-row-item";
-	    rowItem.innerHTML = pixelVal;
-	    let bgColor = colorFunc(parseFloat(pixelVal));
-	    let color = (bgColor < 200) ? '#FFFFFF' : '#000000';
-	    $(rowItem).attr('style', `background-color:rgb(${bgColor},${bgColor},${bgColor});color:${color}`);
-	    row.appendChild(rowItem);
-	  });
+	Visualizer.floatValue = function(d, i, rect) {
+	  d3.select(rect[i]).attr('stroke-width', 2).attr('width', 11).attr('height', 15).attr('stroke', '#FF3333');
+	  let text = document.createElement('div');
+	  text.innerHTML = d;
+	  text.className = 'value-callout';
+	  $('body').append(text);
+	};
 
-	  return csvEl;
+	Visualizer.removeFloat = function(d, i, rect) {
+	  d3.select(rect[i]).attr('stroke-width', 0).attr('width', 12).attr('height', 16);
+	  $('.value-callout').remove();
 	};
 
 	Visualizer.prototype.connectLayers = function(firstClass, secondClass, weightsMatrix) {
@@ -776,7 +771,7 @@
 	      let path = weightsEl.append('line')
 	        .attr('stroke-width', 4)
 	        .attr('stroke', `rgb(240,${color},75)`)
-	        .data([`${firstClass[0]}${idxI} ${secondClass[0]}${idxJ}`]).enter();
+	        .data([{ node1: nodeI.id, node2: nodeJ.id }]);
 	    });
 	  });
 	};
@@ -787,10 +782,12 @@
 	  let x1 = source.getBoundingClientRect().left + ($(source).width() / 2);
 	  let y1 = source.getBoundingClientRect().bottom - ($(source).height() / 2);
 
-	  let regexp = new RegExp('\\b(' + source.id + ')\\b');
-	  let paths = d3.selectAll('line').filter( d => d.match(regexp) );
+	  let paths = d3.selectAll('line').filter( d =>
+	    (d.node1 === source.id  || d.node2 === source.id)
+	  );
+
 	  paths.each( (d, i, paths) => {
-	    let targetId = d.split(' ').filter( el => el !== source.id)[0];
+	    let targetId = (d.node1 === source.id) ? (d.node2) : (d.node1);
 	    let target = $(`#${targetId}`)[0];
 
 	    let x2 = target.getBoundingClientRect().left + ($(target).width() / 2);
@@ -803,8 +800,10 @@
 	  let source = event.target;
 	  if (source.id === '' ) { source = source.parentElement; }
 
-	  let regexp = new RegExp('\\b(' + source.id + ')\\b');
-	  let paths = d3.selectAll('line').filter( d => d.match(regexp) );
+	  let paths = d3.selectAll('line').filter( d =>
+	    (d.node1 === source.id  || d.node2 === source.id)
+	  );
+
 	  paths.each( (d, i, paths) => {
 	    d3.select(paths[i]).attr('stroke-width', 0);
 	  });

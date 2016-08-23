@@ -4,6 +4,7 @@
   "description": "A program to visualize the steps a simple neural network walks through to interpret a handwritten number. The neural network will be a JavaScript implementation of the python neural network here: https://github.com/makeyourownneuralnetwork/makeyourownneuralnetwork",
   "main": "index.js",
   "dependencies": {
+    "d3-scale": "^1.0.3",
     "webpack": "^1.13.1"
   },
   "devDependencies": {},

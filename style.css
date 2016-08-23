@@ -115,29 +115,15 @@ body {
 }
 
 #csv-box {
-  top: 5%;
   transition: all 1000 ease-in-out !important;
-}
-
-.csv-box {
   padding: 20px;
-  display: flex;
-  flex-direction: column;
   background-color: white;
   border-radius: 3px;
   border: 1px solid #2f2f2f;
-}
-
-.csv-row {
-  display: flex;
-  flex-direction: row;
-}
-
-.csv-row-item {
-  width: 15px;
-  padding: 6px 3px;
-  font-size: 10px;
-  text-align: center;
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .next-button {
@@ -181,6 +167,18 @@ body {
   left: 0px;
   width: 100%;
   height: 100%;
+}
+
+.value-callout {
+  background-color: #FFFFFF;
+  z-index: 2;
+  font-size: 96px;
+  font-weight: 700;
+  color: #FF3333;
+  position: absolute;
+  top: 40%;
+  right: 20%;
+  box-shadow: 0px 0px 100px 50px rgba(255,255,255,1);
 }
 
 .path {
