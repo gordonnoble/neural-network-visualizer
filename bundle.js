@@ -131,21 +131,17 @@
 	NeuralNetwork.prototype.learn = function(data, callback) {
 	  let trainingDigits = data.split(/\r?\n/);
 
-	  let i = 0;
-	  while (i < 5) {
-	    trainingDigits.forEach( digit => {
-	      let allValues = digit.split(',').map( x => parseFloat(x));
-	      let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
+	  trainingDigits.forEach( digit => {
+	    let allValues = digit.split(',').map( x => parseFloat(x));
+	    let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
 
-	      let targets = [];
-	      let j = 0;
-	      while(j < 10) { targets.push(0.01); j++; }
-	      let idx = parseInt(allValues[0]);
-	      targets[idx] = 0.99;
-	      this.train(inputs, targets);
-	    });
-	    i++;
-	  }
+	    let targets = [];
+	    let j = 0;
+	    while(j < 10) { targets.push(0.01); j++; }
+	    let idx = parseInt(allValues[0]);
+	    targets[idx] = 0.99;
+	    this.train(inputs, targets);
+	  });
 
 	  callback();
 	};
