@@ -7,7 +7,28 @@ const Visualizer = function(headerQuery, workSpaceQuery, neuralNetwork, training
   this.testDigits = testData.split(/\r?\n/);
 
   this.displayIntro();
-  setTimeout(() => this.neuralNetwork.learn(trainingData), 1000);
+  setTimeout(() => this.neuralNetwork.learn(trainingData, this.removeLoader.bind(this)), 5000);
+};
+
+Visualizer.prototype.drawLoader = function() {
+  let training = document.createElement("div");
+  training.id = "training";
+  training.className = "sk-cube-grid";
+
+  [...Array(9).keys()].forEach( idx => {
+    let squareEl = document.createElement("div");
+    squareEl.className = `sk-cube sk-cube${idx + 1}`;
+  training.appendChild(squareEl);
+  });
+
+  $('body').append(training);
+};
+
+Visualizer.prototype.removeLoader = function() {
+  $('#training').remove();
+
+  let onward = this.nextButton(this.displayNumberPicker.bind(this), 'onward');
+  $('body').append(onward);
 };
 
 Visualizer.prototype.displayIntro = function() {
@@ -28,9 +49,7 @@ Visualizer.prototype.displayIntro = function() {
   so that one node in the final layer wins out, and that's my guess at which digit \
   I'm looking at. Sounding a little abstract? Perfect! That's why I'm here. Onward!";
 
-  let onward = this.nextButton('onward', this.displayNumberPicker.bind(this));
-
-  this.headerSpace.append(onward);
+  this.drawLoader();
   this.workSpace.append(intro);
 };
 
@@ -73,9 +92,7 @@ Visualizer.prototype.displayCSV = function(digit, digitCSV) {
 
   Visualizer.drawImage(digitCSV.slice(2, digitCSV.length), greyscaleMap);
 
-  let cool = this.nextButton('Cool', this.displayScaledCSV);
-  this.headerSpace.append(cool);
-
+  this.headerSpace.append(this.nextButton(this.displayScaledCSV));
   this.titleSpace.innerHTML = 'hover to see each pixel\'s greyscale value';
   $('#digits-box').remove();
 };
@@ -92,7 +109,7 @@ Visualizer.prototype.displayScaledCSV = function() {
 
   Visualizer.drawImage(scaledCSV, greyscaleMap);
 
-  this.headerSpace.append(this.nextButton('Groovy', this.displayInputNodes));
+  this.headerSpace.append(this.nextButton(this.displayInputNodes));
   this.titleSpace.innerHTML = 'before I use these values, I\'ll scale them all between 0 and 1';
 };
 
@@ -103,18 +120,22 @@ Visualizer.prototype.displayInputNodes = function() {
 
   let inputNodesBox = document.createElement('div');
   inputNodesBox.id = 'input-nodes-box';
-  inputNodesBox.className = 'visual-box hidden';
+  inputNodesBox.className = 'visual-box hide';
 
   let inputNodesList = document.createElement('div');
   inputNodesList.className = 'node-list';
   let sampleNodeVals = this.neuralNetwork.sampleInputs;
+  const greyscaleMap = d3.scaleLinear()
+                          .domain([0.01, 0.99])
+                          .range(["#F5F5F5", "#262626"]);
 
   for(let i = 0; i < 20; i++) {
     let node = document.createElement('div');
     node.className = 'input node';
     node.id = `i${i}`;
-    let color = 200 - Math.floor(sampleNodeVals[i] * 200);
-    $(node).attr('style', `background-color:rgb(${color},${color},${color})`);
+    let bgColor = greyscaleMap(sampleNodeVals[i]);
+    let color = (sampleNodeVals[i] < 0.50) ? ('rgb(0,0,0)') : ('rgb(255,255,255)');
+    $(node).attr('style', `background-color:${bgColor};color:${color}`);
 
     let inputValue = document.createElement('p');
     inputValue.innerHTML = Math.floor(sampleNodeVals[i] * 100) / 100;
@@ -122,11 +143,9 @@ Visualizer.prototype.displayInputNodes = function() {
     inputNodesList.appendChild(node);
   }
 
-  let rad = this.nextButton('Rad', this.displayHiddenNodes);
-
   inputNodesBox.appendChild(inputNodesList);
   this.workSpace.append(inputNodesBox);
-  this.headerSpace.append(rad);
+  this.headerSpace.append(this.nextButton(this.displayHiddenNodes));
 
   this.titleSpace.innerHTML = 'each node in my first layer takes in one pixel value\n (here\'s a small sample)';
   setTimeout(() => inputNodesBox.className = 'visual-box center', 0);
@@ -138,7 +157,7 @@ Visualizer.prototype.displayHiddenNodes = function() {
 
   let hiddenNodesBox = document.createElement('div');
   hiddenNodesBox.id = 'hidden-nodes-box';
-  hiddenNodesBox.className = 'visual-box hidden';
+  hiddenNodesBox.className = 'visual-box hide';
 
   let hiddenNodesList = document.createElement('div');
   hiddenNodesList.className = 'node-list';
@@ -151,11 +170,9 @@ Visualizer.prototype.displayHiddenNodes = function() {
     hiddenNodesList.appendChild(node);
   }
 
-  let dope = this.nextButton('Dope', this.fireInputNodes);
-
   Visualizer.injectElements(hiddenNodesBox, hiddenNodesList);
   this.workSpace.append(hiddenNodesBox);
-  this.headerSpace.append(dope);
+  this.headerSpace.append(this.nextButton(this.fireInputNodes));
 
   this.connectLayers('input', 'hidden', this.neuralNetwork.sampleWIH);
 
@@ -167,8 +184,8 @@ Visualizer.prototype.displayHiddenNodes = function() {
 
 Visualizer.prototype.fireInputNodes = function() {
   Visualizer.removeNextButton();
-  let awesome = this.nextButton('Awesome', this.sigmoidHiddenNodes);
-
+  let awesome = this.nextButton(this.sigmoidHiddenNodes);
+  let hiddenOutputs = this.neuralNetwork.sampleHiddenOutputs;
   let hiddenInputs = this.neuralNetwork.sampleHiddenInputs;
   let selection = $('.node.hidden');
   let i = 0;
@@ -181,9 +198,10 @@ Visualizer.prototype.fireInputNodes = function() {
     }
     let value = document.createElement('p');
     value.innerHTML = (Math.floor(hiddenInputs[i] * 100) / 100);
-    let color = Math.floor(hiddenInputs[i] * 360) + 160;
+    let color = d3.interpolateCool(hiddenOutputs[i]);
+
     $(selection[i]).trigger('mouseover');
-    $(selection[i]).attr('style', `background-color:rgb(240,${color},75)`);
+    $(selection[i]).attr('style', `background-color:${color}`);
     selection[i].appendChild(value);
     i++;
   }, 300);
@@ -201,9 +219,7 @@ Visualizer.prototype.sigmoidHiddenNodes = function() {
     node.children[0].innerHTML = Math.floor(hiddenOutputs[idx] * 100) / 100;
   });
 
-  let nice = this.nextButton('Nice', this.displayOutputNodes);
-  this.headerSpace.append(nice);
-
+  this.headerSpace.append(this.nextButton(this.displayOutputNodes));
   this.titleSpace.innerHTML = 'I like values between 0 and 1, so let\'s scale everything again';
 };
 
@@ -213,7 +229,7 @@ Visualizer.prototype.displayOutputNodes = function() {
 
   let outputNodesBox = document.createElement('div');
   outputNodesBox.id = 'output-nodes-box';
-  outputNodesBox.className = 'visual-box hidden';
+  outputNodesBox.className = 'visual-box hide';
 
   let outputNodesList = document.createElement('div');
   outputNodesList.className = 'node-list';
@@ -226,11 +242,9 @@ Visualizer.prototype.displayOutputNodes = function() {
     outputNodesList.appendChild(node);
   }
 
-  let swell = this.nextButton('Swell', this.fireHiddenNodes);
-
   Visualizer.injectElements(outputNodesBox, outputNodesList);
   this.workSpace.append(outputNodesBox);
-  this.headerSpace.append(swell);
+  this.headerSpace.append(this.nextButton(this.fireHiddenNodes));
 
   this.connectLayers('hidden', 'output', this.neuralNetwork.sampleWHO);
 
@@ -241,8 +255,8 @@ Visualizer.prototype.displayOutputNodes = function() {
 
 Visualizer.prototype.fireHiddenNodes = function() {
   Visualizer.removeNextButton();
-  let stellar = this.nextButton('Stellar', this.sigmoidOutputNodes);
-
+  let stellar = this.nextButton(this.sigmoidOutputNodes);
+  let finalOutputs = this.neuralNetwork.finalOutputs.toArray();
   let finalInputs = this.neuralNetwork.finalInputs.toArray();
   let selection = $('.node.output');
   let i = 0;
@@ -255,9 +269,9 @@ Visualizer.prototype.fireHiddenNodes = function() {
     }
     let value = document.createElement('p');
     value.innerHTML = (Math.floor(finalInputs[i] * 100) / 100);
-    let color = Math.floor(finalInputs[i] * 360) + 160;
+    let color = d3.interpolateCool(finalOutputs[i]);
     $(selection[i]).trigger('mouseover');
-    $(selection[i]).attr('style', `background-color:rgb(240,${color},75)`);
+    $(selection[i]).attr('style', `background-color:${color}`);
     selection[i].appendChild(value);
     i++;
   }, 300);
@@ -274,9 +288,7 @@ Visualizer.prototype.sigmoidOutputNodes = function() {
     node.children[0].innerHTML = Math.floor(finalOutputs[idx] * 100) / 100;
   });
 
-  let fantastic = this.nextButton('Fantastic', this.clearTopLayers.bind(this));
-  this.headerSpace.append(fantastic);
-
+  this.headerSpace.append(this.nextButton(this.clearTopLayers.bind(this)));
   this.titleSpace.innerHTML = ('and again, let\'s scale everything down just to be safe');
 };
 
@@ -286,12 +298,13 @@ Visualizer.prototype.clearTopLayers = function() {
   $('#hidden-nodes-box').remove();
   $('.node.output').off();
   $('#output-nodes-box').attr('class', 'visual-box center');
-  setTimeout(() => this.displayAnswer(), 1000);
+  setTimeout(() => this.displayAnswer(), 200);
 };
 
 Visualizer.prototype.displayAnswer = function() {
   let digits = document.createElement('div');
   digits.id = 'answer-digits';
+  digits.className = 'hide';
   let digitY = $('#output-nodes-box').get(0).getBoundingClientRect().bottom;
 
   [...Array(10).keys()].forEach( idx => {
@@ -310,18 +323,19 @@ Visualizer.prototype.displayAnswer = function() {
 
   let arrowBox = document.createElement('div');
   arrowBox.id = 'arrow-box';
+  arrowBox.className = 'hide';
   let arrow = document.createElement('div');
   arrow.className = 'arrow';
   arrow.innerHTML = `I think that was a ${chosenDigit}`;
   arrowBox.appendChild(arrow);
   $(arrowBox).attr('style', `top:${chosenY}px;left:${chosenX}px;transform:translateY(-200%) translateX(-40%)`);
 
-  let again = this.nextButton('Again!', this.reset.bind(this));
-
   $('body').append(digits);
   $('body').append(arrowBox);
-  this.headerSpace.append(again);
-  this.titleSpace.innerHTML = 'because I\'m so well trained, one node stands out!';
+  setTimeout(() => digits.className = '', 10);
+  setTimeout(() => arrowBox.className = '', 10);
+  this.headerSpace.append(this.nextButton(this.reset.bind(this), 'again!'));
+  this.titleSpace.innerHTML = 'because I\'m so well trained, one node stands out';
 };
 
 Visualizer.prototype.reset = function() {
@@ -344,7 +358,7 @@ Visualizer.drawImage = function(csv, colorFunc) {
   csv = csv.split(",").map( val => parseFloat(val) );
   let image = d3.select('body')
                   .append("svg")
-                  .attr("height", 400)
+                  .attr("height", 450)
                   .attr("width", 300)
                   .attr("id", 'csv-box');
 
@@ -384,17 +398,17 @@ Visualizer.prototype.connectLayers = function(firstClass, secondClass, weightsMa
   let weights = d3.select('body').append('svg');
   weights.attr('class', 'weights-matrix');
 
+  let scale = d3.scaleLinear().domain([-0.5, 0.5]).range([0, 1]);
   $(`.node.${firstClass}`).each( (idxI, nodeI) => {
     $(nodeI).hover(this.drawPaths, this.hidePaths);
 
     $(`.node.${secondClass}`).each( (idxJ, nodeJ) => {
       $(nodeJ).hover(this.drawPaths, this.hidePaths);
 
-      let color = Math.floor(weightsMatrix.get(idxJ, idxI) * 360) + 160;
-
+      let color = d3.interpolateCool(scale(weightsMatrix.get(idxJ, idxI)));
       let path = weights.append('line')
         .attr('stroke-width', 4)
-        .attr('stroke', `rgb(240,${color},75)`)
+        .attr('stroke', color)
         .data([{ node1: nodeI.id, node2: nodeJ.id }]);
     });
   });
@@ -433,7 +447,8 @@ Visualizer.prototype.hidePaths = function(event) {
   });
 };
 
-Visualizer.prototype.nextButton = function(buttonText, callback) {
+Visualizer.prototype.nextButton = function(callback, buttonText) {
+  buttonText = (buttonText === undefined) ? ('cool') : (buttonText);
   let button = document.createElement('h1');
   button.className = 'next-button hoverable';
   button.id = `${buttonText.toLowerCase()}`;

@@ -64,7 +64,7 @@ NeuralNetwork.prototype.train = function(inputs, targets) {
   this.wih = this.wih.map( (x, i, j) => x + wihCorrections.get(i, j));
 };
 
-NeuralNetwork.prototype.learn = function(data) {
+NeuralNetwork.prototype.learn = function(data, callback) {
   let trainingDigits = data.split(/\r?\n/);
 
   trainingDigits.forEach( digit => {
@@ -78,6 +78,8 @@ NeuralNetwork.prototype.learn = function(data) {
     targets[idx] = 0.99;
     this.train(inputs, targets);
   });
+
+  callback();
 };
 
 NeuralNetwork.prototype.interpret = function(digitCSV) {
