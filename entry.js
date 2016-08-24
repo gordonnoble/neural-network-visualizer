@@ -7,6 +7,6 @@ document.addEventListener("DOMContentLoaded",
     let testData = document.getElementById('test-data').innerHTML;
     let netty = new NeuralNetwork(784, 100, 10, 0.1);
 
-    let vizy = new Visualizer('#header', '#title', '#work-space', netty, trainingData, testData);
+    let vizy = new Visualizer('#header', '#work-space', netty, trainingData, testData);
   }
 );

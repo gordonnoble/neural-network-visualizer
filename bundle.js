@@ -53,7 +53,7 @@
 	    let testData = document.getElementById('test-data').innerHTML;
 	    let netty = new NeuralNetwork(784, 100, 10, 0.1);
 
-	    let vizy = new Visualizer('#header', '#title', '#work-space', netty, trainingData, testData);
+	    let vizy = new Visualizer('#header', '#work-space', netty, trainingData, testData);
 	  }
 	);
 
@@ -128,7 +128,7 @@
 	  this.wih = this.wih.map( (x, i, j) => x + wihCorrections.get(i, j));
 	};
 
-	NeuralNetwork.prototype.learn = function(data, callback) {
+	NeuralNetwork.prototype.learn = function(data) {
 	  let trainingDigits = data.split(/\r?\n/);
 
 	  trainingDigits.forEach( digit => {
@@ -142,8 +142,6 @@
 	    targets[idx] = 0.99;
 	    this.train(inputs, targets);
 	  });
-
-	  callback();
 	};
 
 	NeuralNetwork.prototype.interpret = function(digitCSV) {
@@ -381,44 +379,44 @@
 
 	const Matrix = __webpack_require__(3);
 
-	const Visualizer = function(headerQuery, titleQuery, workSpaceQuery, neuralNetwork, trainingData, testData) {
+	const Visualizer = function(headerQuery, workSpaceQuery, neuralNetwork, trainingData, testData) {
 	  this.headerSpace = $(headerQuery);
-	  this.titleSpace = $(titleQuery);
 	  this.workSpace = $(workSpaceQuery);
 	  this.neuralNetwork = neuralNetwork;
 	  this.testDigits = testData.split(/\r?\n/);
 
-	  this.beginTraining(trainingData);
+	  this.displayIntro();
+	  setTimeout(() => this.neuralNetwork.learn(trainingData), 1000);
 	};
 
-	Visualizer.prototype.beginTraining = function(trainingData) {
-	  // this.titleSpace.html('one minute, getting up to speed...');
-	  // let thinkingEl = this.drawLoadingElement();
+	Visualizer.prototype.displayIntro = function() {
+	  let intro = document.createElement('div');
+	  intro.id = 'intro';
 
-	  // let startVisualization = function() {
-	  //   thinkingEl.remove();
-	    this.displayNumberPicker();
-	  // };
+	  intro.innerHTML = "Hi, I'm a neural network. I'm going to show you how I identify \
+	  handwritten numbers. Before we begin, let me tell you a bit about \
+	  myself. Fundamentally I'm just a bunch of connected \"nodes\". Each node knows two \
+	  things: it's own number value and its children nodes. Every node has the ability to \
+	  \"fire\", at which point the node's value is transmitted to all children nodes. Not all \
+	  connections are equal, though. Some are weighted more heavily than others.<br><br>My nodes are \
+	  organized into three layers. The first layer is for taking in information, in my case \
+	  pixel data, and it's by far the largest with about 800 nodes. The second layer is much \
+	  smaller at 100 nodes, and it serves to aggregate firing from the first layer. My \
+	  final layer has exactly 10 nodes, and each one corresponds to a digit zero through nine. After a \
+	  little training (it's happening right now!) I adjust the connections between nodes \
+	  so that one node in the final layer wins out, and that's my guess at which digit \
+	  I'm looking at. Sounding a little abstract? Perfect! That's why I'm here. Onward!";
 
-	  // setTimeout( () => this.neuralNetwork.learn(trainingData, startVisualization.bind(this)), 200);
-	};
+	  let onward = this.nextButton('onward', this.displayNumberPicker.bind(this));
 
-	Visualizer.prototype.drawLoadingElement = function() {
-	  let thinkingEl = document.createElement('div');
-	  thinkingEl.className = 'sk-cube-grid';
-
-	  [...Array(9).keys()].forEach( idx => {
-	    let squareEl = document.createElement('div');
-	    squareEl.className = `sk-cube sk-cube${idx + 1}`;
-	    thinkingEl.appendChild(squareEl);
-	  });
-
-	  document.querySelector('body').appendChild(thinkingEl);
-	  return thinkingEl;
+	  this.headerSpace.append(onward);
+	  this.workSpace.append(intro);
 	};
 
 	Visualizer.prototype.displayNumberPicker = function() {
-	  this.titleSpace.html('ok, pick a number');
+	  $('#intro').remove();
+	  Visualizer.removeNextButton();
+
 	  let digitsBox = document.createElement('div');
 	  digitsBox.id = 'digits-box';
 	  digitsBox.className = 'visual-box center';
@@ -431,15 +429,20 @@
 	    digitsBox.appendChild(digit);
 	  }
 
+	  this.titleSpace = document.createElement('h1');
+	  this.titleSpace.innerHTML = 'first you\'ll need to pick a number';
+	  this.headerSpace.append(this.titleSpace);
 	  this.workSpace.append(digitsBox);
 	};
 
 	Visualizer.prototype.pick = function(event) {
 	  let digit = parseInt(event.target.id);
-	  let digitCSV = this.testDigits[digit];
-	  this.neuralNetwork.interpret(digitCSV);
+	  let csv = this.testDigits[digit];
+
+	  this.neuralNetwork.interpret(csv);
 	  this.neuralNetwork.prepSample(20, 15);
-	  this.displayCSV(digit, digitCSV);
+
+	  this.displayCSV(digit, csv);
 	};
 
 	Visualizer.prototype.displayCSV = function(digit, digitCSV) {
@@ -449,14 +452,14 @@
 
 	  Visualizer.drawImage(digitCSV.slice(2, digitCSV.length), greyscaleMap);
 
-	  let coolEl = this.makeNextButton('Cool', this.showScaledCSV);
-	  this.headerSpace.append(coolEl);
+	  let cool = this.nextButton('Cool', this.displayScaledCSV);
+	  this.headerSpace.append(cool);
 
-	  this.titleSpace.html('we break each image down into greyscale values between 0 and 255');
-	  this.slideAndHide(document.getElementById('digits-box'));
+	  this.titleSpace.innerHTML = 'hover to see each pixel\'s greyscale value';
+	  $('#digits-box').remove();
 	};
 
-	Visualizer.prototype.showScaledCSV = function() {
+	Visualizer.prototype.displayScaledCSV = function() {
 	  Visualizer.removeNextButton();
 	  $('#csv-box').remove();
 
@@ -466,10 +469,10 @@
 	                          .domain([0.01, 0.99])
 	                          .range(["#FFFFFF", "#000000"]);
 
-	  let scaledCSVEl = Visualizer.drawImage(scaledCSV, greyscaleMap);
+	  Visualizer.drawImage(scaledCSV, greyscaleMap);
 
-	  this.headerSpace.append(this.makeNextButton('Groovy', this.displayInputNodes));
-	  this.titleSpace.html('each value is scaled between 0 and 1 (exclusive)');
+	  this.headerSpace.append(this.nextButton('Groovy', this.displayInputNodes));
+	  this.titleSpace.innerHTML = 'before I use these values, I\'ll scale them all between 0 and 1';
 	};
 
 
@@ -486,26 +489,25 @@
 	  let sampleNodeVals = this.neuralNetwork.sampleInputs;
 
 	  for(let i = 0; i < 20; i++) {
-	    let nodeEl = document.createElement('div');
-	    nodeEl.className = 'input node';
-	    nodeEl.id = `i${i}`;
+	    let node = document.createElement('div');
+	    node.className = 'input node';
+	    node.id = `i${i}`;
 	    let color = 200 - Math.floor(sampleNodeVals[i] * 200);
-	    $(nodeEl).attr('style', `background-color:rgb(${color},${color},${color})`);
+	    $(node).attr('style', `background-color:rgb(${color},${color},${color})`);
 
 	    let inputValue = document.createElement('p');
 	    inputValue.innerHTML = Math.floor(sampleNodeVals[i] * 100) / 100;
-	    nodeEl.appendChild(inputValue);
-	    inputNodesList.appendChild(nodeEl);
+	    node.appendChild(inputValue);
+	    inputNodesList.appendChild(node);
 	  }
 
-	  let radEl = this.makeNextButton('Rad', this.displayHiddenNodes);
+	  let rad = this.nextButton('Rad', this.displayHiddenNodes);
 
-	  Visualizer.injectElements(inputNodesBox, inputNodesList);
+	  inputNodesBox.appendChild(inputNodesList);
 	  this.workSpace.append(inputNodesBox);
-	  this.headerSpace.append(radEl);
+	  this.headerSpace.append(rad);
 
-	  this.titleSpace.html('each value is mapped to an input node \n(here\'s a small sample)');
-	  this.fadeAndHide(document.getElementById('csv-box'));
+	  this.titleSpace.innerHTML = 'each node in my first layer takes in one pixel value\n (here\'s a small sample)';
 	  setTimeout(() => inputNodesBox.className = 'visual-box center', 0);
 	};
 
@@ -521,22 +523,22 @@
 	  hiddenNodesList.className = 'node-list';
 
 	  for(let i = 0; i < 15; i ++) {
-	    let nodeEl = document.createElement('div');
-	    nodeEl.className = 'hidden node';
-	    nodeEl.id = `h${i}`;
-	    $(nodeEl).attr('style', 'background-color:#FFFFFF;border:1px solid black');
-	    hiddenNodesList.appendChild(nodeEl);
+	    let node = document.createElement('div');
+	    node.className = 'hidden node';
+	    node.id = `h${i}`;
+	    $(node).attr('style', 'background-color:#FFFFFF;border:1px solid black');
+	    hiddenNodesList.appendChild(node);
 	  }
 
-	  let dopeEl = this.makeNextButton('Dope', this.fireInputNodes);
+	  let dope = this.nextButton('Dope', this.fireInputNodes);
 
 	  Visualizer.injectElements(hiddenNodesBox, hiddenNodesList);
 	  this.workSpace.append(hiddenNodesBox);
-	  this.headerSpace.append(dopeEl);
+	  this.headerSpace.append(dope);
 
 	  this.connectLayers('input', 'hidden', this.neuralNetwork.sampleWIH);
 
-	  this.titleSpace.html('the input layer is connected to a second layer of nodes via weighted connections');
+	  this.titleSpace.innerHTML = 'time to bring out the second layer; hover to see the weighted connections';
 	  document.getElementById('input-nodes-box').className = 'visual-box top';
 	  setTimeout(() => hiddenNodesBox.className = 'visual-box center', 0);
 	};
@@ -544,7 +546,7 @@
 
 	Visualizer.prototype.fireInputNodes = function() {
 	  Visualizer.removeNextButton();
-	  let awesomeEl = this.makeNextButton('Awesome', this.sigmoidHiddenNodes);
+	  let awesome = this.nextButton('Awesome', this.sigmoidHiddenNodes);
 
 	  let hiddenInputs = this.neuralNetwork.sampleHiddenInputs;
 	  let selection = $('.node.hidden');
@@ -554,7 +556,7 @@
 	    $(selection[i - 1]).trigger('mouseout');
 	    if (i === selection.length) {
 	      window.clearInterval(firing);
-	      this.headerSpace.append(awesomeEl);
+	      this.headerSpace.append(awesome);
 	    }
 	    let value = document.createElement('p');
 	    value.innerHTML = (Math.floor(hiddenInputs[i] * 100) / 100);
@@ -566,7 +568,7 @@
 	  }, 300);
 
 
-	  this.titleSpace.html('each node in the second layer sums the weighted inputs from the first layer');
+	  this.titleSpace.innerHTML = ('each node in the second layer sums the weighted inputs from the first layer');
 	};
 
 	Visualizer.prototype.sigmoidHiddenNodes = function() {
@@ -578,13 +580,13 @@
 	    node.children[0].innerHTML = Math.floor(hiddenOutputs[idx] * 100) / 100;
 	  });
 
-	  let niceEl = this.makeNextButton('Nice', this.showOutputNodes);
-	  this.headerSpace.append(niceEl);
+	  let nice = this.nextButton('Nice', this.displayOutputNodes);
+	  this.headerSpace.append(nice);
 
-	  this.titleSpace.html('each value is then scaled between 0 and 1 using the sigmoid function');
+	  this.titleSpace.innerHTML = 'I like values between 0 and 1, so let\'s scale everything again';
 	};
 
-	Visualizer.prototype.showOutputNodes = function() {
+	Visualizer.prototype.displayOutputNodes = function() {
 	  Visualizer.removeNextButton();
 	  $('p').remove();
 
@@ -596,29 +598,29 @@
 	  outputNodesList.className = 'node-list';
 
 	  for(let i = 0; i < 10; i ++) {
-	    let nodeEl = document.createElement('div');
-	    nodeEl.className = 'output node';
-	    nodeEl.id = `o${i}`;
-	    $(nodeEl).attr('style', 'background-color:#FFFFFF;border:1px solid black');
-	    outputNodesList.appendChild(nodeEl);
+	    let node = document.createElement('div');
+	    node.className = 'output node';
+	    node.id = `o${i}`;
+	    $(node).attr('style', 'background-color:#FFFFFF;border:1px solid black');
+	    outputNodesList.appendChild(node);
 	  }
 
-	  let swellEl = this.makeNextButton('Swell', this.fireHiddenNodes);
+	  let swell = this.nextButton('Swell', this.fireHiddenNodes);
 
 	  Visualizer.injectElements(outputNodesBox, outputNodesList);
 	  this.workSpace.append(outputNodesBox);
-	  this.headerSpace.append(swellEl);
+	  this.headerSpace.append(swell);
 
 	  this.connectLayers('hidden', 'output', this.neuralNetwork.sampleWHO);
 
-	  this.titleSpace.html('a third and final layer of nodes is connected to the second');
+	  this.titleSpace.innerHTML = ('third and final layer is ready to go');
 	  setTimeout(() => outputNodesBox.className = 'visual-box bottom', 0);
 	};
 
 
 	Visualizer.prototype.fireHiddenNodes = function() {
 	  Visualizer.removeNextButton();
-	  let stellarEl = this.makeNextButton('Stellar', this.sigmoidOutputNodes);
+	  let stellar = this.nextButton('Stellar', this.sigmoidOutputNodes);
 
 	  let finalInputs = this.neuralNetwork.finalInputs.toArray();
 	  let selection = $('.node.output');
@@ -628,7 +630,7 @@
 	    $(selection[i - 1]).trigger('mouseout');
 	    if (i === selection.length) {
 	      window.clearInterval(firing);
-	      this.headerSpace.append(stellarEl);
+	      this.headerSpace.append(stellar);
 	    }
 	    let value = document.createElement('p');
 	    value.innerHTML = (Math.floor(finalInputs[i] * 100) / 100);
@@ -639,7 +641,7 @@
 	    i++;
 	  }, 300);
 
-	  this.titleSpace.html('each node in the third layer sums the weighted inputs from the second layer');
+	  this.titleSpace.innerHTML = 'just like last time, each node sums its inputs';
 	};
 
 	Visualizer.prototype.sigmoidOutputNodes = function() {
@@ -651,22 +653,22 @@
 	    node.children[0].innerHTML = Math.floor(finalOutputs[idx] * 100) / 100;
 	  });
 
-	  let fantasticEl = this.makeNextButton('Fantastic', this.clearTopLayers.bind(this));
-	  this.headerSpace.append(fantasticEl);
+	  let fantastic = this.nextButton('Fantastic', this.clearTopLayers.bind(this));
+	  this.headerSpace.append(fantastic);
 
-	  this.titleSpace.html('again, each value is scaled between 0 and 1 using the sigmoid function');
+	  this.titleSpace.innerHTML = ('and again, let\'s scale everything down just to be safe');
 	};
 
 	Visualizer.prototype.clearTopLayers = function() {
 	  Visualizer.removeNextButton();
-
-	  this.slideAndHide(document.getElementById('input-nodes-box'));
-	  this.slideAndHide(document.getElementById('hidden-nodes-box'), this.showAnswer);
+	  $('#input-nodes-box').remove();
+	  $('#hidden-nodes-box').remove();
 	  $('.node.output').off();
 	  $('#output-nodes-box').attr('class', 'visual-box center');
+	  setTimeout(() => this.displayAnswer(), 1000);
 	};
 
-	Visualizer.prototype.showAnswer = function() {
+	Visualizer.prototype.displayAnswer = function() {
 	  let digits = document.createElement('div');
 	  digits.id = 'answer-digits';
 	  let digitY = $('#output-nodes-box').get(0).getBoundingClientRect().bottom;
@@ -687,18 +689,18 @@
 
 	  let arrowBox = document.createElement('div');
 	  arrowBox.id = 'arrow-box';
-	  let arrowEl = document.createElement('div');
-	  arrowEl.className = 'arrow';
-	  arrowEl.innerHTML = `I think that was a ${chosenDigit}`;
-	  arrowBox.appendChild(arrowEl);
+	  let arrow = document.createElement('div');
+	  arrow.className = 'arrow';
+	  arrow.innerHTML = `I think that was a ${chosenDigit}`;
+	  arrowBox.appendChild(arrow);
 	  $(arrowBox).attr('style', `top:${chosenY}px;left:${chosenX}px;transform:translateY(-200%) translateX(-40%)`);
 
-	  let againEl = this.makeNextButton('Again!', this.reset.bind(this));
+	  let again = this.nextButton('Again!', this.reset.bind(this));
 
 	  $('body').append(digits);
 	  $('body').append(arrowBox);
-	  this.headerSpace.append(againEl);
-	  this.titleSpace.html('in a properly trained neural network, one node fires significantly more than the rest');
+	  this.headerSpace.append(again);
+	  this.titleSpace.innerHTML = 'because I\'m so well trained, one node stands out!';
 	};
 
 	Visualizer.prototype.reset = function() {
@@ -707,6 +709,7 @@
 	  $('#answer-digits').remove();
 	  $('#output-nodes-box').remove();
 	  $('.next-button').remove();
+	  this.titleSpace.remove();
 
 	  this.displayNumberPicker();
 	};
@@ -757,8 +760,8 @@
 	};
 
 	Visualizer.prototype.connectLayers = function(firstClass, secondClass, weightsMatrix) {
-	  let weightsEl = d3.select('body').append('svg');
-	  weightsEl.attr('class', 'weights-matrix');
+	  let weights = d3.select('body').append('svg');
+	  weights.attr('class', 'weights-matrix');
 
 	  $(`.node.${firstClass}`).each( (idxI, nodeI) => {
 	    $(nodeI).hover(this.drawPaths, this.hidePaths);
@@ -768,7 +771,7 @@
 
 	      let color = Math.floor(weightsMatrix.get(idxJ, idxI) * 360) + 160;
 
-	      let path = weightsEl.append('line')
+	      let path = weights.append('line')
 	        .attr('stroke-width', 4)
 	        .attr('stroke', `rgb(240,${color},75)`)
 	        .data([{ node1: nodeI.id, node2: nodeJ.id }]);
@@ -809,31 +812,7 @@
 	  });
 	};
 
-	Visualizer.prototype.slideAndHide = function(el, callback) {
-	  el.className = 'visual-box off-screen';
-
-	  setTimeout(() => {
-	    el.remove();
-
-	    if (callback !== undefined) {
-	      callback.call(this);
-	    }
-	  }, 1000);
-	};
-
-	Visualizer.prototype.fadeAndHide = function(el, callback) {
-	  el.className = 'visual-box hidden';
-
-	  setTimeout(() => {
-	    el.remove();
-
-	    if (callback !== undefined) {
-	      callback.call(this);
-	    }
-	  }, 1000);
-	};
-
-	Visualizer.prototype.makeNextButton = function(buttonText, callback) {
+	Visualizer.prototype.nextButton = function(buttonText, callback) {
 	  let button = document.createElement('h1');
 	  button.className = 'next-button hoverable';
 	  button.id = `${buttonText.toLowerCase()}`;
