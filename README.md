@@ -1,35 +1,7 @@
-# NeuralNetworkVisualizer
-A program to visualize the steps a simple neural network walks through to interpret a handwritten number.
-The neural network will be a JavaScript implementation of the python neural network here: https://github.com/makeyourownneuralnetwork/makeyourownneuralnetwork
+# An Extremely Brief Introduction to Neural Networks
+An artificial neural network is a programming design scheme for approximating complex functions. Neural networks are able to solve problems such as image and speech recognition, where the input is large and difficult to quantify with hard and fast rules. As their name suggests, neural networks are architecturally similar to the brain, and in fact biological brains are a good mental model for how neural networks function. However a much better understanding comes from actually seeing one in action, which is the goal of this demonstration.
 
-## MVP
-- [ ] Ability to pick a handwritten digit from 0 to 9
-- [ ] Display of CSV interpretation of image
-- [ ] Visualization of CSV values affecting first node layer's value
-- [ ] Hover over first layer node to show it's linked nodes and a visualization of their weights (color map or thickness)
-- [ ] Fire first layer and see middle node layers nodes' values
-- [ ] Fire middle layer and see final layer's nodes' values
-- [ ] Visualization of most-fired node correctly associated with a digit
+# Meet a JavaScript Neural Network
+This is an in-browser, JavaScript neural network that identifies handwritten numbers with >95% accuracy. It is inspired by its python cousin [here](https://github.com/makeyourownneuralnetwork/makeyourownneuralnetwork) (many thanks to Tariq Rashid for his excellent book). Everything the network needs to function, including training data, is packaged in the JavaScript - no back end necessary.
 
-## Technologies, APIs
-The JavaScript neural network will need a good math library for matrices, the sigmoid function, and random numbers on a curve. Fortunately there are plenty of those. E.g. http://mathjs.org/index.html, http://glmatrix.net/
-
-## Wireframes
-![number-picker] (./wireframes/number_picker.pdf)
-![number-to-csv] (./wireframes/number_to_csv.pdf)
-![first-layer] (./wireframes/first_layer.pdf)
-![first-layer-hover] (./wireframes/first_layer_hover.pdf)
-![second-layer] (./wireframes/second_layer.pdf)
-![second-layer-hover] (./wireframes/second_layer_hover.pdf)
-![final-layer-output] (./wireframes/final_output_layer.pdf)
-
-## Backend
-None
-
-## Implementation Timeline
-* Phase 1.0: JavaScript neural network
-* Phase 1.1: Number picker and number to csv visualization
-* Phase 2.0: First layer visualization
-* Phase 2.1: First layer hover visualization and firing
-* Phase 3.0: Middle layer visualization
-* Phase 3.1: Middle layer hover visualization, firing, and final output layer
+Upon loading the page, a new, untrained neural network is instantiated. Because there is an element of randomness in creating a network, each one is unique and the results between them may very ever so slightly. The network immediately sets to the task of training itself on 500 sample images. Once complete, you may query the network with any of ten new images that the network has not yet encountered. Pick a number and watch as the network walks you through the steps it takes in processing it. Have fun!
