@@ -8,6 +8,7 @@ const Visualizer = function(headerQuery, workSpaceQuery, neuralNetwork, training
   this.testDigits = testData.split(/\r?\n/);
 
   this.displayIntro();
+  // this.removeLoader();
   setTimeout(() => this.neuralNetwork.learn(trainingData, this.removeLoader.bind(this)), 5000);
 };
 
@@ -82,12 +83,9 @@ Visualizer.prototype.drawNewImage = function() {
   document.body.onmouseup = function() {
     window.mouseDown--;
   };
-  const greyscaleMap = d3.scaleLinear()
-                          .domain([0, 255])
-                          .range(["#FFFFFF", "#000000"]);
 
   this.drawImage(csv,
-    greyscaleMap,
+    Visualizer.greyscaleMap255(),
     Visualizer.drawPixel,
     function(){}
   );
@@ -101,12 +99,14 @@ Visualizer.prototype.submitImage = function(event) {
   Visualizer.removeNextButton();
 
   let csv = d3.selectAll('rect').data();
-  csv = 'x,' + csv.join(',');
+  this.centerImage(csv);
+  let newCsv = d3.selectAll('rect').data();
+  newCsv = 'x,' + newCsv.join(',');
 
-  this.neuralNetwork.interpret(csv);
+  this.neuralNetwork.interpret(newCsv);
   this.neuralNetwork.prepSample(20, 15);
 
-  this.displayCSV(csv);
+  this.displayCSV(newCsv);
 };
 
 Visualizer.prototype.pickDigit = function(event) {
@@ -123,12 +123,8 @@ Visualizer.prototype.pickDigit = function(event) {
 Visualizer.prototype.displayCSV = function(csv) {
   if( $('#csv-box')) { $('#csv-box').remove(); }
 
-  const greyscaleMap = d3.scaleLinear()
-                          .domain([0, 255])
-                          .range(["#FFFFFF", "#000000"]);
-
   this.drawImage(csv.slice(2, csv.length),
-    greyscaleMap,
+    Visualizer.greyscaleMap255(),
     Visualizer.floatValue,
     Visualizer.removeFloat
   );
@@ -143,12 +139,8 @@ Visualizer.prototype.displayScaledCSV = function() {
 
   let scaledCSV = this.neuralNetwork.inputs.toArray().map( x => Math.floor(x * 100) / 100 ).join(',');
 
-  const greyscaleMap = d3.scaleLinear()
-                          .domain([0.01, 0.99])
-                          .range(["#FFFFFF", "#000000"]);
-
   this.drawImage(scaledCSV,
-    greyscaleMap,
+    Visualizer.greyscaleMap1(),
     Visualizer.floatValue,
     Visualizer.removeFloat
   );
@@ -334,7 +326,8 @@ Visualizer.prototype.displayAnswer = function() {
   arrowBox.className = 'hide';
   let arrow = document.createElement('div');
   arrow.className = 'arrow';
-  arrow.innerHTML = `I think that was a ${chosenDigit}`;
+  let article = (chosenDigit == 8) ? ('an') : ('a');
+  arrow.innerHTML = `I think that was ${article} ${chosenDigit}`;
   arrowBox.appendChild(arrow);
   $(arrowBox).attr('style', `top:${chosenY}px;left:${chosenX}px;transform:translateY(-200%) translateX(-40%)`);
 
@@ -369,7 +362,7 @@ Visualizer.prototype.drawImage = function(csv, colorFunc, mouseOverFunc, mouseOu
                   .attr("id", 'csv-box');
 
   let xFunc = function(d, i) {
-    return Math.floor(12*(i % 28));
+    return (12 * (i % 28));
   };
   let yFunc = function(d, i) {
     return (16*Math.floor(i / 28));
@@ -393,7 +386,7 @@ Visualizer.floatValue = function(d, i, rect) {
   let text = document.createElement('div');
   text.innerHTML = d;
   text.className = 'value-callout';
-  $('body').append(text);
+  $('#work-space').append(text);
 };
 
 Visualizer.removeFloat = function(d, i, rect) {
@@ -488,6 +481,50 @@ Visualizer.prototype.fireNodes = function(inputVals, outputVals, nodeSelection, 
   }, 300);
 
   this.titleSpace.innerHTML = title;
+};
+
+Visualizer.prototype.centerImage = function(csv) {
+  let xSum = 0, ySum = 0;
+
+  csv.forEach( (val, i) => {
+    let x = i % 28 - 14;
+    let y = Math.floor(i / 28) - 14;
+    xSum += val * x;
+    ySum += val * y;
+  });
+
+  xCenter = Math.floor((xSum / csv.length) / 255);
+  yCenter = Math.floor((ySum / csv.length) / 255);
+
+  newCSV = [];
+
+  d3.selectAll('rect').each( (d, i, rect) => {
+    let newX =  i % 28 + xCenter;
+    let newY = Math.floor(i / 28) + yCenter;
+    let newI = newY * 28 + newX;
+    let color = (newI < 0 || newI > 783) ? (0) : (d3.select(rect[newI]).data()[0]);
+    newCSV[i] = color;
+  });
+
+  $('#csv-box').remove();
+
+  this.drawImage(newCSV.join(','),
+    Visualizer.greyscaleMap255(),
+    function() {},
+    function() {}
+  );
+};
+
+Visualizer.greyscaleMap255 = function() {
+  return d3.scaleLinear()
+            .domain([0, 255])
+            .range(["#FFFFFF", "#000000"]);
+};
+
+Visualizer.greyscaleMap1 = function() {
+  return d3.scaleLinear()
+            .domain([0.01, 0.99])
+            .range(["#FFFFFF", "#000000"]);
 };
 
 Visualizer.prototype.nextButton = function(callback, buttonText) {

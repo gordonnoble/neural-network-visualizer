@@ -28,7 +28,7 @@ const Text = {
 
   header10: "One more time, I'll scale everything down.",
 
-  header11: "See how one node stands out? All that chatter between nodes in the first two layers had the effect of activating that one node the final layer and silencing the rest."
+  header11: "See how one node stands out? All that chatter between nodes in the first two layers had the effect of activating that one node in the final layer and silencing the rest."
 
 };
 
