@@ -389,8 +389,7 @@
 	  this.testDigits = testData.split(/\r?\n/);
 	
 	  this.displayIntro();
-	  this.removeLoader();
-	  // setTimeout(() => this.neuralNetwork.learn(trainingData, this.removeLoader.bind(this)), 5000);
+	  setTimeout(() => this.neuralNetwork.learn(trainingData, this.removeLoader.bind(this)), 5000);
 	};
 	
 	Visualizer.prototype.drawLoader = function() {
