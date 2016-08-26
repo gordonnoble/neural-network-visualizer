@@ -8,7 +8,8 @@ const Visualizer = function(headerQuery, workSpaceQuery, neuralNetwork, training
   this.testDigits = testData.split(/\r?\n/);
 
   this.displayIntro();
-  setTimeout(() => this.neuralNetwork.learn(trainingData, this.removeLoader.bind(this)), 5000);
+  this.removeLoader();
+  // setTimeout(() => this.neuralNetwork.learn(trainingData, this.removeLoader.bind(this)), 5000);
 };
 
 Visualizer.prototype.drawLoader = function() {
@@ -54,9 +55,16 @@ Visualizer.prototype.displayNumberPicker = function() {
     let digit = document.createElement('div');
     digit.className = 'digit hoverable';
     digit.id = i; digit.innerHTML = i;
-    $(digit).on('click', this.pick.bind(this));
+    $(digit).on('click', this.pickDigit.bind(this));
     digitsBox.appendChild(digit);
   }
+
+  let draw = document.createElement('div');
+  draw.id = 'draw-button';
+  draw.className = 'digit hoverable';
+  draw.innerHTML = 'Draw One!';
+  $(draw).on('click', this.drawNewImage.bind(this));
+  digitsBox.appendChild(draw);
 
   this.titleSpace = document.createElement('h3');
   this.titleSpace.id = "title";
@@ -65,26 +73,69 @@ Visualizer.prototype.displayNumberPicker = function() {
   this.workSpace.append(digitsBox);
 };
 
-Visualizer.prototype.pick = function(event) {
-  let digit = parseInt(event.target.id);
-  let csv = this.testDigits[digit];
+Visualizer.prototype.drawNewImage = function() {
+  let csv = new Array(784).fill(0).join(',');
 
-  this.neuralNetwork.interpret(csv);
-  this.neuralNetwork.prepSample(20, 15);
-
-  this.displayCSV(digit, csv);
-};
-
-Visualizer.prototype.displayCSV = function(digit, digitCSV) {
+  window.mouseDown = 0;
+  document.body.onmousedown = function() {
+    window.mouseDown++;
+  };
+  document.body.onmouseup = function() {
+    window.mouseDown--;
+  };
   const greyscaleMap = d3.scaleLinear()
                           .domain([0, 255])
                           .range(["#FFFFFF", "#000000"]);
 
-  Visualizer.drawImage(digitCSV.slice(2, digitCSV.length), greyscaleMap);
+  this.drawImage(csv,
+    greyscaleMap,
+    Visualizer.drawPixel,
+    function(){}
+  );
+
+  this.headerSpace.append(this.nextButton(this.submitImage.bind(this), 'submit'));
+  this.titleSpace.innerHTML = Text.header1_5;
+  $('#digits-box').remove();
+};
+
+Visualizer.prototype.submitImage = function(event) {
+  Visualizer.removeNextButton();
+
+  let csv = d3.selectAll('rect').data();
+  csv = 'x,' + csv.join(',');
+
+  this.neuralNetwork.interpret(csv);
+  this.neuralNetwork.prepSample(20, 15);
+
+  this.displayCSV(csv);
+};
+
+Visualizer.prototype.pickDigit = function(event) {
+  $('#digits-box').remove();
+
+  let csv = this.testDigits[parseInt(event.target.id)];
+
+  this.neuralNetwork.interpret(csv);
+  this.neuralNetwork.prepSample(20, 15);
+
+  this.displayCSV(csv);
+};
+
+Visualizer.prototype.displayCSV = function(csv) {
+  if( $('#csv-box')) { $('#csv-box').remove(); }
+
+  const greyscaleMap = d3.scaleLinear()
+                          .domain([0, 255])
+                          .range(["#FFFFFF", "#000000"]);
+
+  this.drawImage(csv.slice(2, csv.length),
+    greyscaleMap,
+    Visualizer.floatValue,
+    Visualizer.removeFloat
+  );
 
   this.headerSpace.append(this.nextButton(this.displayScaledCSV));
   this.titleSpace.innerHTML = Text.header2;
-  $('#digits-box').remove();
 };
 
 Visualizer.prototype.displayScaledCSV = function() {
@@ -97,7 +148,11 @@ Visualizer.prototype.displayScaledCSV = function() {
                           .domain([0.01, 0.99])
                           .range(["#FFFFFF", "#000000"]);
 
-  Visualizer.drawImage(scaledCSV, greyscaleMap);
+  this.drawImage(scaledCSV,
+    greyscaleMap,
+    Visualizer.floatValue,
+    Visualizer.removeFloat
+  );
 
   this.headerSpace.append(this.nextButton(this.displayInputNodes));
   this.titleSpace.innerHTML = Text.header3;
@@ -160,9 +215,25 @@ Visualizer.prototype.displayHiddenNodes = function() {
     hiddenNodesList.appendChild(node);
   }
 
-  Visualizer.injectElements(hiddenNodesBox, hiddenNodesList);
+  hiddenNodesBox.appendChild(hiddenNodesList);
   this.workSpace.append(hiddenNodesBox);
-  this.headerSpace.append(this.nextButton(this.fireInputNodes));
+
+  let sigmoidCallback = this.sigmoidNodes.bind(this,
+    this.neuralNetwork.sampleHiddenOutputs,
+    $('.node.hidden'),
+    this.displayOutputNodes,
+    Text.header7
+  );
+
+  let fireCallback = this.fireNodes.bind(this,
+    this.neuralNetwork.sampleHiddenInputs,
+    this.neuralNetwork.sampleHiddenOutputs,
+    $('.node.hidden'),
+    sigmoidCallback,
+    Text.header6
+  );
+
+  this.headerSpace.append(this.nextButton(fireCallback));
 
   this.connectLayers('input', 'hidden', this.neuralNetwork.sampleWIH);
 
@@ -171,46 +242,15 @@ Visualizer.prototype.displayHiddenNodes = function() {
   setTimeout(() => hiddenNodesBox.className = 'visual-box center', 0);
 };
 
-
-Visualizer.prototype.fireInputNodes = function() {
-  Visualizer.removeNextButton();
-  let awesome = this.nextButton(this.sigmoidHiddenNodes);
-  let hiddenOutputs = this.neuralNetwork.sampleHiddenOutputs;
-  let hiddenInputs = this.neuralNetwork.sampleHiddenInputs;
-  let selection = $('.node.hidden');
-  let i = 0;
-
-  let firing = setInterval( () => {
-    $(selection[i - 1]).trigger('mouseout');
-    if (i === selection.length) {
-      window.clearInterval(firing);
-      this.headerSpace.append(awesome);
-    }
-    let value = document.createElement('p');
-    value.innerHTML = (Math.floor(hiddenInputs[i] * 100) / 100);
-    let color = d3.interpolateInferno(hiddenOutputs[i]);
-
-    $(selection[i]).trigger('mouseover');
-    $(selection[i]).attr('style', `background-color:${color}`);
-    selection[i].appendChild(value);
-    i++;
-  }, 300);
-
-
-  this.titleSpace.innerHTML = Text.header6;
-};
-
-Visualizer.prototype.sigmoidHiddenNodes = function() {
+Visualizer.prototype.sigmoidNodes = function(outputVals, nodeSelection, nextCallback, text) {
   Visualizer.removeNextButton();
 
-  let hiddenOutputs = this.neuralNetwork.sampleHiddenOutputs;
-
-  $('.node.hidden').each( (idx, node) => {
-    node.children[0].innerHTML = Math.floor(hiddenOutputs[idx] * 100) / 100;
+  nodeSelection.each( (idx, node) => {
+    node.children[0].innerHTML = Math.floor(outputVals[idx] * 100) / 100;
   });
 
-  this.headerSpace.append(this.nextButton(this.displayOutputNodes));
-  this.titleSpace.innerHTML = Text.header7;
+  this.headerSpace.append(this.nextButton(nextCallback));
+  this.titleSpace.innerHTML = text;
 };
 
 Visualizer.prototype.displayOutputNodes = function() {
@@ -232,54 +272,30 @@ Visualizer.prototype.displayOutputNodes = function() {
     outputNodesList.appendChild(node);
   }
 
-  Visualizer.injectElements(outputNodesBox, outputNodesList);
+  outputNodesBox.appendChild(outputNodesList);
   this.workSpace.append(outputNodesBox);
-  this.headerSpace.append(this.nextButton(this.fireHiddenNodes));
+
+  let sigmoidCallback = this.sigmoidNodes.bind(this,
+    this.neuralNetwork.finalOutputs.toArray(),
+    $('.node.output'),
+    this.clearTopLayers.bind(this),
+    Text.header10
+  );
+
+  let fireCallback = this.fireNodes.bind(this,
+    this.neuralNetwork.finalInputs.toArray(),
+    this.neuralNetwork.finalOutputs.toArray(),
+    $('.node.output'),
+    sigmoidCallback,
+    Text.header9
+  );
+
+  this.headerSpace.append(this.nextButton(fireCallback));
 
   this.connectLayers('hidden', 'output', this.neuralNetwork.sampleWHO);
 
   this.titleSpace.innerHTML = Text.header8;
   setTimeout(() => outputNodesBox.className = 'visual-box bottom', 0);
-};
-
-
-Visualizer.prototype.fireHiddenNodes = function() {
-  Visualizer.removeNextButton();
-  let stellar = this.nextButton(this.sigmoidOutputNodes);
-  let finalOutputs = this.neuralNetwork.finalOutputs.toArray();
-  let finalInputs = this.neuralNetwork.finalInputs.toArray();
-  let selection = $('.node.output');
-  let i = 0;
-
-  let firing = setInterval( () => {
-    $(selection[i - 1]).trigger('mouseout');
-    if (i === selection.length) {
-      window.clearInterval(firing);
-      this.headerSpace.append(stellar);
-    }
-    let value = document.createElement('p');
-    value.innerHTML = (Math.floor(finalInputs[i] * 100) / 100);
-    let color = d3.interpolateInferno(finalOutputs[i]);
-    $(selection[i]).trigger('mouseover');
-    $(selection[i]).attr('style', `background-color:${color}`);
-    selection[i].appendChild(value);
-    i++;
-  }, 300);
-
-  this.titleSpace.innerHTML = Text.header9;
-};
-
-Visualizer.prototype.sigmoidOutputNodes = function() {
-  Visualizer.removeNextButton();
-
-  let finalOutputs = this.neuralNetwork.finalOutputs.toArray();
-
-  $('.node.output').each( (idx, node) => {
-    node.children[0].innerHTML = Math.floor(finalOutputs[idx] * 100) / 100;
-  });
-
-  this.headerSpace.append(this.nextButton(this.clearTopLayers.bind(this)));
-  this.titleSpace.innerHTML = Text.header10;
 };
 
 Visualizer.prototype.clearTopLayers = function() {
@@ -345,7 +361,7 @@ Visualizer.prototype.answerNode = function() {
   return $(`#o${answer}`);
 };
 
-Visualizer.drawImage = function(csv, colorFunc) {
+Visualizer.prototype.drawImage = function(csv, colorFunc, mouseOverFunc, mouseOutFunc) {
   csv = csv.split(",").map( val => parseFloat(val) );
   let image = d3.select('#work-space')
                   .append("svg")
@@ -363,13 +379,14 @@ Visualizer.drawImage = function(csv, colorFunc) {
       .data(csv)
       .enter()
       .append('rect')
+      .attr('class', 'pixel')
       .attr("x", (d, i) => xFunc(d, i))
       .attr("y", (d, i) => yFunc(d, i))
       .attr("height", 16)
       .attr("width", 12)
       .style("fill", d => colorFunc(d))
-      .on('mouseover', (d, i, rect) => Visualizer.floatValue(d, i, rect))
-      .on('mouseout', (d, i, rect) => Visualizer.removeFloat(d, i, rect));
+      .on('mouseover', (d, i, rect) => mouseOverFunc(d, i, rect))
+      .on('mouseout', (d, i, rect) => mouseOutFunc(d, i, rect));
 };
 
 Visualizer.floatValue = function(d, i, rect) {
@@ -383,6 +400,15 @@ Visualizer.floatValue = function(d, i, rect) {
 Visualizer.removeFloat = function(d, i, rect) {
   d3.select(rect[i]).attr('stroke-width', 0).attr('width', 12).attr('height', 16);
   $('.value-callout').remove();
+};
+
+Visualizer.drawPixel = function(d, i, rect) {
+  if (window.mouseDown === 0) { return; }
+
+  let color = Math.floor(Math.random() * 30);
+  d3.select(rect[i])
+  .style('fill', `rgb(${color},${color},${color})`)
+  .data([ 255 - color ]);
 };
 
 Visualizer.prototype.connectLayers = function(firstClass, secondClass, weightsMatrix) {
@@ -438,6 +464,33 @@ Visualizer.prototype.hidePaths = function(event) {
   });
 };
 
+Visualizer.prototype.fireNodes = function(inputVals, outputVals, nodeSelection, nextCallback, title) {
+  Visualizer.removeNextButton();
+  let next = this.nextButton(nextCallback);
+  let i = 0;
+
+  let firing = setInterval( () => {
+    $(nodeSelection[i - 1]).trigger('mouseout');
+
+    if (i === nodeSelection.length) {
+      window.clearInterval(firing);
+      this.headerSpace.append(next);
+    } else {
+      let value = document.createElement('p');
+      value.innerHTML = (Math.floor(inputVals[i] * 100) / 100);
+      let color = d3.interpolateInferno(outputVals[i]);
+
+      $(nodeSelection[i]).trigger('mouseover');
+      $(nodeSelection[i]).attr('style', `background-color:${color}`);
+      nodeSelection[i].appendChild(value);
+    }
+
+    i++;
+  }, 300);
+
+  this.titleSpace.innerHTML = title;
+};
+
 Visualizer.prototype.nextButton = function(callback, buttonText) {
   buttonText = (buttonText === undefined) ? ('cool') : (buttonText);
   let button = document.createElement('h3');
@@ -450,10 +503,6 @@ Visualizer.prototype.nextButton = function(callback, buttonText) {
 
 Visualizer.removeNextButton = function() {
   $('.next-button').remove();
-};
-
-Visualizer.injectElements = function(parent, ...children) {
-  children.forEach(child => parent.appendChild(child));
 };
 
 module.exports = Visualizer;

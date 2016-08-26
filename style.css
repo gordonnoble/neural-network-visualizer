@@ -132,6 +132,10 @@ h3 {
   background-color: #FF3333;
 }
 
+#draw-button {
+  front-size: 24px;
+}
+
 #digits-box {
   transition: all 1000 ease-in-out !important;
 }

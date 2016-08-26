@@ -5,7 +5,9 @@ const Text = {
 
   header1: "First you'll need to pick a number.",
 
-  header2: "Great, here's the image you picked. It has 784 pixels (28x28), each with a greyscale value. <br>\
+  header1_5: "Click and drag to draw your digit. Write big!",
+
+  header2: "Great, here's your image. It has 784 pixels (28x28), each with a greyscale value. <br>\
   Hover over a pixel's to see its value.",
 
   header3: "I like values between 0 and 1, so I've scaled each pixel value. Hover again!",
@@ -26,7 +28,7 @@ const Text = {
 
   header10: "One more time, I'll scale everything down.",
 
-  header11: "See how one node stands out? All that chatter between nodes in the first two layers had the effect of activating that one node the final layer and silencing the rest. My training paid off!"
+  header11: "See how one node stands out? All that chatter between nodes in the first two layers had the effect of activating that one node the final layer and silencing the rest."
 
 };
 
