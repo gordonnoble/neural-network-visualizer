@@ -98,8 +98,8 @@ Visualizer.prototype.drawNewImage = function() {
 Visualizer.prototype.submitImage = function(event) {
   Visualizer.removeNextButton();
 
-  let csv = d3.selectAll('rect').data();
-  this.centerImage(csv);
+  this.centerImage();
+
   let newCsv = d3.selectAll('rect').data();
   newCsv = 'x,' + newCsv.join(',');
 
@@ -483,36 +483,39 @@ Visualizer.prototype.fireNodes = function(inputVals, outputVals, nodeSelection, 
   this.titleSpace.innerHTML = title;
 };
 
-Visualizer.prototype.centerImage = function(csv) {
-  let xSum = 0, ySum = 0;
+Visualizer.prototype.centerImage = function() {
+  for(let i = 0; i < 5; i++) {
+      let xSum = 0, ySum = 0;
+      let csv = d3.selectAll('rect').data();
 
-  csv.forEach( (val, i) => {
-    let x = i % 28 - 14;
-    let y = Math.floor(i / 28) - 14;
-    xSum += val * x;
-    ySum += val * y;
-  });
+      csv.forEach( (val, i) => {
+        let x = i % 28 - 14;
+        let y = Math.floor(i / 28) - 14;
+        xSum += val * x;
+        ySum += val * y;
+      });
 
-  xCenter = Math.floor((xSum / csv.length) / 255);
-  yCenter = Math.floor((ySum / csv.length) / 255);
+      xCenter = Math.floor((xSum / csv.length) / 255);
+      yCenter = Math.floor((ySum / csv.length) / 255);
 
-  newCSV = [];
+      newCSV = [];
 
-  d3.selectAll('rect').each( (d, i, rect) => {
-    let newX =  i % 28 + xCenter;
-    let newY = Math.floor(i / 28) + yCenter;
-    let newI = newY * 28 + newX;
-    let color = (newI < 0 || newI > 783) ? (0) : (d3.select(rect[newI]).data()[0]);
-    newCSV[i] = color;
-  });
+      d3.selectAll('rect').each( (d, i, rect) => {
+        let newX =  i % 28 + xCenter;
+        let newY = Math.floor(i / 28) + yCenter;
+        let newI = newY * 28 + newX;
+        let color = (newI < 0 || newI > 783) ? (0) : (d3.select(rect[newI]).data()[0]);
+        newCSV[i] = color;
+      });
 
-  $('#csv-box').remove();
+      $('#csv-box').remove();
 
-  this.drawImage(newCSV.join(','),
-    Visualizer.greyscaleMap255(),
-    function() {},
-    function() {}
-  );
+      this.drawImage(newCSV.join(','),
+      Visualizer.greyscaleMap255(),
+      function() {},
+      function() {}
+    );
+  }
 };
 
 Visualizer.greyscaleMap255 = function() {
