@@ -1,5 +1,5 @@
 const MyMath = require('./my_math.js');
-const Matrix = require('./matrix.js');
+const Numeric = require('Numeric');
 
 let NeuralNetwork = function(numInputNodes, numHiddenNodes, numOutputNodes, learningRate) {
   this.numInputNodes = numInputNodes;
@@ -8,74 +8,71 @@ let NeuralNetwork = function(numInputNodes, numHiddenNodes, numOutputNodes, lear
   this.learningRate = learningRate;
 
   let stdDev = Math.pow(this.numHiddenNodes, -0.5);
-  this.wih = new Matrix(this.numHiddenNodes, this.numInputNodes);
-  this.wih = this.wih.map( () =>
-    MyMath.randAroundZero(stdDev)
+  this.wih = Numeric.rep([this.numHiddenNodes, this.numInputNodes], 0);
+  this.wih = this.wih.map( row =>
+    row.map( x => MyMath.randAroundZero(stdDev))
   );
 
   stdDev = Math.pow(this.numOutputNodes, -0.5);
-  this.who = new Matrix(this.numOutputNodes, this.numHiddenNodes);
-  this.who = this.who.map( () =>
-    MyMath.randAroundZero(stdDev)
+  this.who = Numeric.rep([this.numOutputNodes, this.numHiddenNodes], 0);
+  this.who = this.who.map( row =>
+    row.map( x => MyMath.randAroundZero(stdDev))
   );
 };
 
 NeuralNetwork.prototype.query = function(inputs) {
-  this.inputs = new Matrix(inputs).transpose();
+  this.inputs = Numeric.transpose([inputs]);
 
-  this.hiddenInputs = this.wih.dot(this.inputs);
-  this.hiddenOutputs = this.hiddenInputs.map( x =>
-    MyMath.sigmoid(x)
+  this.hiddenInputs = Numeric.dot(this.wih, this.inputs);
+  this.hiddenOutputs = this.hiddenInputs.map( row =>
+    row.map(x => MyMath.sigmoid(x))
   );
 
-  this.finalInputs = this.who.dot(this.hiddenOutputs);
-  this.finalOutputs = this.finalInputs.map( x =>
-    MyMath.sigmoid(x)
+  this.finalInputs = Numeric.dot(this.who, this.hiddenOutputs);
+  this.finalOutputs = this.finalInputs.map( row =>
+    row.map(x => MyMath.sigmoid(x))
   );
 
   return this.finalOutputs;
 };
 
 NeuralNetwork.prototype.train = function(inputs, targets) {
-  inputs = new Matrix(inputs).transpose();
-  targets = new Matrix(targets).transpose();
+  inputs = Numeric.transpose([inputs]);
+  targets = Numeric.transpose([targets]);
 
-  let hiddenInputs = this.wih.dot(inputs);
-  let hiddenOutputs = hiddenInputs.map( x =>
-    MyMath.sigmoid(x)
+  let hiddenInputs = Numeric.dot(this.wih, inputs);
+  let hiddenOutputs = hiddenInputs.map( row =>
+    row.map(x => MyMath.sigmoid(x))
   );
 
-  let finalInputs = this.who.dot(hiddenOutputs);
-  let finalOutputs = finalInputs.map( x =>
-    MyMath.sigmoid(x)
+  let finalInputs = Numeric.dot(this.who, hiddenOutputs);
+  let finalOutputs = finalInputs.map( row =>
+    row.map(x => MyMath.sigmoid(x))
   );
 
-  let outputErrors = targets.map( (x, i, j) => x - finalOutputs.get(i, j));
-  let hiddenErrors = this.who.transpose().dot(outputErrors);
+  let outputErrors = Numeric.sub(targets, finalOutputs);
+  let hiddenErrors = Numeric.dot(Numeric.transpose(this.who), outputErrors);
 
-  let invFinalOut = finalOutputs.map( x => 1 - x );
-  let whoCorrections = outputErrors.times(finalOutputs).times(invFinalOut);
-  whoCorrections = whoCorrections.dot(hiddenOutputs.transpose()).map( x => x * this.learningRate );
-  this.who = this.who.map( (x, i, j) => x + whoCorrections.get(i, j));
+  let invFinalOut = Numeric.sub(1, finalOutputs);
+  let whoCorrections = Numeric.mul(Numeric.mul(outputErrors, finalOutputs), invFinalOut);
+  whoCorrections = Numeric.mul(Numeric.dot(whoCorrections, Numeric.transpose(hiddenOutputs)), this.learningRate);
+  this.who = Numeric.add(this.who, whoCorrections);
 
-  let invHiddenOut = hiddenOutputs.map( x => 1 - x );
-  let wihCorrections = hiddenErrors.times(hiddenOutputs).times(invHiddenOut);
-  wihCorrections = wihCorrections.dot(inputs.transpose()).map( x => x * this.learningRate );
-  this.wih = this.wih.map( (x, i, j) => x + wihCorrections.get(i, j));
+  let invHiddenOut = Numeric.sub(1, hiddenOutputs);
+  let wihCorrections = Numeric.mul(Numeric.mul(hiddenErrors, hiddenOutputs), invHiddenOut);
+  wihCorrections = Numeric.mul(Numeric.dot(wihCorrections, Numeric.transpose(inputs)), this.learningRate);
+  this.wih = Numeric.add(this.wih, wihCorrections);
 };
 
 NeuralNetwork.prototype.learn = function(data, callback) {
   let trainingDigits = data.split(/\r?\n/);
 
   trainingDigits.forEach( digit => {
-    let allValues = digit.split(',').map( x => parseFloat(x));
+    let allValues = Numeric.parseCSV(digit)[0];
     let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
 
-    let targets = [];
-    let j = 0;
-    while(j < 10) { targets.push(0.01); j++; }
-    let idx = parseInt(allValues[0]);
-    targets[idx] = 0.99;
+    let targets = new Array(10).fill(0.01);
+    targets[allValues[0]] = 0.99;
     this.train(inputs, targets);
   });
 
@@ -83,10 +80,10 @@ NeuralNetwork.prototype.learn = function(data, callback) {
 };
 
 NeuralNetwork.prototype.interpret = function(digitCSV) {
-  let allValues = digitCSV.split(',').map( x => parseFloat(x));
+  let allValues = Numeric.parseCSV(digitCSV)[0];
   let inputs = allValues.slice(1, allValues.length).map( x => x / 255.0 * 0.99 + 0.01);
 
-  let outputs = this.query(inputs).toArray();
+  let outputs = Numeric.transpose(this.query(inputs))[0];
   this.chosenDigit = outputs.indexOf(Math.max(...outputs));
 };
 
@@ -94,30 +91,29 @@ NeuralNetwork.prototype.prepSample = function(numSampleInputs, numSampleHiddenIn
     this.sampleInputs = [];
     this.sampleHiddenInputs = [];
     this.sampleHiddenOutputs = [];
-    this.sampleWIH = new Matrix(numSampleHiddenInputs, numSampleInputs);
-    this.sampleWHO = new Matrix(this.numOutputNodes, numSampleHiddenInputs);
+    this.sampleWIH = Numeric.rep([numSampleHiddenInputs, numSampleInputs], 0);
+    this.sampleWHO = Numeric.rep([this.numOutputNodes, numSampleHiddenInputs], 0);
 
     let sampleInputIdxs = NeuralNetwork.randomIdxs(this.numInputNodes, numSampleInputs);
     let sampleHiddenIdxs = NeuralNetwork.randomIdxs(this.numHiddenNodes, numSampleHiddenInputs);
 
-    let inputs = this.inputs.toArray();
-    let hiddenInputs = this.hiddenInputs.toArray();
-    let hiddenOutputs = this.hiddenOutputs.toArray();
-
     sampleInputIdxs.forEach( (iIdx, i) => {
-      this.sampleInputs.push(inputs[iIdx]);
+      this.sampleInputs.push(this.inputs[iIdx]);
 
       sampleHiddenIdxs.forEach( (hIdx, j) => {
-        this.sampleWIH.set(j, i, this.wih.get(hIdx, iIdx));
+        this.sampleWIH[j][i] = this.wih[hIdx][iIdx];
       });
     });
+
+    let hiddenInputs = Numeric.transpose(this.hiddenInputs)[0];
+    let hiddenOutputs = Numeric.transpose(this.hiddenOutputs)[0];
 
     sampleHiddenIdxs.forEach( (hIdx, i) => {
       this.sampleHiddenInputs.push(hiddenInputs[hIdx]);
       this.sampleHiddenOutputs.push(hiddenOutputs[hIdx]);
 
       [...Array(10).keys()].forEach( (oIdx, j) => {
-        this.sampleWHO.set(j, i, this.who.get(oIdx, hIdx));
+        this.sampleWHO[j][i] = this.who[oIdx][hIdx];
       });
     });
 };

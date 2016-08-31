@@ -1,76 +1,72 @@
-const Matrix = require('../neural_network/matrix.js');
 const Text = require ('./text.js');
 
 const Visualizer = function(headerQuery, workSpaceQuery, neuralNetwork, trainingData, testData) {
-  this.headerSpace = $(headerQuery);
-  this.workSpace = $(workSpaceQuery);
+  this.headerSpace = d3.select(headerQuery);
+  this.workSpace = d3.select(workSpaceQuery);
   this.neuralNetwork = neuralNetwork;
   this.testDigits = testData.split(/\r?\n/);
 
   this.displayIntro();
-  // this.removeLoader();
-  setTimeout(() => this.neuralNetwork.learn(trainingData, this.removeLoader.bind(this)), 5000);
-};
-
-Visualizer.prototype.drawLoader = function() {
-  let training = document.createElement("div");
-  training.id = "training";
-  training.className = "sk-cube-grid";
-
-  [...Array(9).keys()].forEach( idx => {
-    let squareEl = document.createElement("div");
-    squareEl.className = `sk-cube sk-cube${idx + 1}`;
-  training.appendChild(squareEl);
-  });
-
-  $('body').append(training);
-};
-
-Visualizer.prototype.removeLoader = function() {
-  $('#training').remove();
-
-  let onward = this.nextButton(this.displayNumberPicker.bind(this), 'onward');
-  $('body').append(onward);
+  setTimeout(() => this.neuralNetwork.learn(trainingData, this.removeLoader.bind(this)), 500);
 };
 
 Visualizer.prototype.displayIntro = function() {
-  let intro = document.createElement('div');
-  intro.id = 'intro';
-
-  intro.innerHTML = Text.intro;
+  let intro = this.workSpace.append('div').attr('id', 'intro');
+  intro.node().innerHTML = Text.intro;
 
   this.drawLoader();
-  this.workSpace.append(intro);
+};
+
+Visualizer.prototype.drawLoader = function() {
+  let data = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+  d3.select('body')
+    .append('div')
+    .attr('id', 'training')
+    .attr('class', 'sk-cube-grid')
+    .selectAll('div')
+    .data(data).enter()
+    .append('div')
+    .attr('class', d => `sk-cube sk-cube${d + 1}`);
+};
+
+Visualizer.prototype.removeLoader = function() {
+  d3.select('#training').remove();
+
+  d3.select('body').append('h3')
+                      .attr('id', `onward`)
+                      .attr('class', 'next-button hoverable')
+                      .text('onward')
+                      .on('click', this.displayNumberPicker.bind(this));
 };
 
 Visualizer.prototype.displayNumberPicker = function() {
-  $('#intro').remove();
+  d3.select('#intro').remove();
   Visualizer.removeNextButton();
 
-  let digitsBox = document.createElement('div');
-  digitsBox.id = 'digits-box';
-  digitsBox.className = 'visual-box center';
+  let digitsBox = this.workSpace.append('div')
+    .attr('id', 'digits-box')
+    .attr('class', 'visual-box center');
 
-  for (let i = 0; i < 10; i++) {
-    let digit = document.createElement('div');
-    digit.className = 'digit hoverable';
-    digit.id = i; digit.innerHTML = i;
-    $(digit).on('click', this.pickDigit.bind(this));
-    digitsBox.appendChild(digit);
-  }
+  let nums = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  digitsBox.selectAll('div')
+    .data(nums).enter()
+    .append('div')
+    .attr('id', d => d)
+    .attr('class', 'digit hoverable')
+    .text(d => d)
+    .on('click', this.pickDigit.bind(this));
 
-  let draw = document.createElement('div');
-  draw.id = 'draw-button';
-  draw.className = 'digit hoverable';
-  draw.innerHTML = 'Draw One!';
-  $(draw).on('click', this.drawNewImage.bind(this));
-  digitsBox.appendChild(draw);
+  digitsBox.append('div')
+    .attr('id', 'draw-button')
+    .attr('class', 'digit hoverable')
+    .text('Draw One!')
+    .on('click', this.drawNewImage.bind(this));
 
-  this.titleSpace = document.createElement('h3');
-  this.titleSpace.id = "title";
+
+  this.titleSpace = this.headerSpace.append('h3').attr('id', 'title').node();
+
   this.titleSpace.innerHTML = Text.header1;
-  this.headerSpace.append(this.titleSpace);
-  this.workSpace.append(digitsBox);
 };
 
 Visualizer.prototype.drawNewImage = function() {
@@ -90,9 +86,9 @@ Visualizer.prototype.drawNewImage = function() {
     function(){}
   );
 
-  this.headerSpace.append(this.nextButton(this.submitImage.bind(this), 'submit'));
+  this.appendNextButton(this.submitImage.bind(this), 'submit');
   this.titleSpace.innerHTML = Text.header1_5;
-  $('#digits-box').remove();
+  d3.select('#digits-box').remove();
 };
 
 Visualizer.prototype.submitImage = function(event) {
@@ -109,10 +105,10 @@ Visualizer.prototype.submitImage = function(event) {
   this.displayCSV(newCsv);
 };
 
-Visualizer.prototype.pickDigit = function(event) {
-  $('#digits-box').remove();
+Visualizer.prototype.pickDigit = function(d) {
+  d3.select('#digits-box').remove();
 
-  let csv = this.testDigits[parseInt(event.target.id)];
+  let csv = this.testDigits[parseInt(d)];
 
   this.neuralNetwork.interpret(csv);
   this.neuralNetwork.prepSample(20, 15);
@@ -121,97 +117,90 @@ Visualizer.prototype.pickDigit = function(event) {
 };
 
 Visualizer.prototype.displayCSV = function(csv) {
-  if( $('#csv-box')) { $('#csv-box').remove(); }
+  if( d3.select('#csv-box')) { d3.select('#csv-box').remove(); }
 
   this.drawImage(csv.slice(2, csv.length),
     Visualizer.greyscaleMap255(),
-    Visualizer.floatValue,
-    Visualizer.removeFloat
+    this.floatValue.bind(this),
+    this.removeFloat.bind(this)
   );
 
-  this.headerSpace.append(this.nextButton(this.displayScaledCSV));
+  this.appendNextButton(this.displayScaledCSV);
   this.titleSpace.innerHTML = Text.header2;
 };
 
 Visualizer.prototype.displayScaledCSV = function() {
   Visualizer.removeNextButton();
-  $('#csv-box').remove();
+  d3.select('#csv-box').remove();
 
-  let scaledCSV = this.neuralNetwork.inputs.toArray().map( x => Math.floor(x * 100) / 100 ).join(',');
+  let scaledCSV = this.neuralNetwork.inputs.map( x => Math.floor(x * 100) / 100 ).join(',');
 
   this.drawImage(scaledCSV,
     Visualizer.greyscaleMap1(),
-    Visualizer.floatValue,
-    Visualizer.removeFloat
+    this.floatValue.bind(this),
+    this.removeFloat.bind(this)
   );
 
-  this.headerSpace.append(this.nextButton(this.displayInputNodes));
+  this.appendNextButton(this.displayInputNodes);
   this.titleSpace.innerHTML = Text.header3;
 };
 
-
 Visualizer.prototype.displayInputNodes = function() {
   Visualizer.removeNextButton();
-  $('#csv-box').remove();
+  d3.select('#csv-box').remove();
 
-  let inputNodesBox = document.createElement('div');
-  inputNodesBox.id = 'input-nodes-box';
-  inputNodesBox.className = 'visual-box hide';
+  let inputNodesBox = this.workSpace.append('div')
+                                        .attr('id', 'input-nodes-box')
+                                        .attr('class', 'visual-box hide');
 
-  let inputNodesList = document.createElement('div');
-  inputNodesList.className = 'node-list';
   let sampleNodeVals = this.neuralNetwork.sampleInputs;
   const greyscaleMap = d3.scaleLinear()
                           .domain([0.01, 0.99])
                           .range(["#F5F5F5", "#262626"]);
 
-  for(let i = 0; i < 20; i++) {
-    let node = document.createElement('div');
-    node.className = 'input node';
-    node.id = `i${i}`;
-    let bgColor = greyscaleMap(sampleNodeVals[i]);
-    let color = (sampleNodeVals[i] < 0.50) ? ('rgb(0,0,0)') : ('rgb(255,255,255)');
-    $(node).attr('style', `background-color:${bgColor};color:${color}`);
+  let data = [...Array(20).keys()];
 
-    let inputValue = document.createElement('p');
-    inputValue.innerHTML = Math.floor(sampleNodeVals[i] * 100) / 100;
-    node.appendChild(inputValue);
-    inputNodesList.appendChild(node);
-  }
+  inputNodesBox.append('div')
+                .attr('class', 'node-list')
+                .selectAll('div')
+                .data(data).enter()
+                .append('div')
+                .attr('id', d => `i${d}`)
+                .attr('class', 'input node')
+                .attr('style', d => {
+                  let bgColor = greyscaleMap(sampleNodeVals[d]);
+                  let color = (sampleNodeVals[d] < 0.50) ? ('rgb(0,0,0)') : ('rgb(255,255,255)');
+                  return `background-color:${bgColor};color:${color}`;
+                })
+                .append('p');
 
-  inputNodesBox.appendChild(inputNodesList);
-  this.workSpace.append(inputNodesBox);
-  this.headerSpace.append(this.nextButton(this.displayHiddenNodes));
+  this.appendNextButton(this.displayHiddenNodes);
 
   this.titleSpace.innerHTML = Text.header4;
-  setTimeout(() => inputNodesBox.className = 'visual-box center', 0);
+  setTimeout(() => inputNodesBox.attr('class', 'visual-box center'), 0);
 };
 
 Visualizer.prototype.displayHiddenNodes = function() {
-  $('p').remove();
+  d3.selectAll('p').remove();
   Visualizer.removeNextButton();
 
-  let hiddenNodesBox = document.createElement('div');
-  hiddenNodesBox.id = 'hidden-nodes-box';
-  hiddenNodesBox.className = 'visual-box hide';
+  let hiddenNodesBox = this.workSpace.append('div')
+                                        .attr('id', 'hidden-nodes-box')
+                                        .attr('class', 'visual-box hide');
 
-  let hiddenNodesList = document.createElement('div');
-  hiddenNodesList.className = 'node-list';
-
-  for(let i = 0; i < 15; i ++) {
-    let node = document.createElement('div');
-    node.className = 'hidden node';
-    node.id = `h${i}`;
-    $(node).attr('style', 'background-color:#FFFFFF;border:1px solid black');
-    hiddenNodesList.appendChild(node);
-  }
-
-  hiddenNodesBox.appendChild(hiddenNodesList);
-  this.workSpace.append(hiddenNodesBox);
+  let data = [...Array(15).keys()];
+  hiddenNodesBox.append('div')
+                  .attr('class', 'node-list')
+                  .selectAll('div')
+                  .data(data).enter()
+                  .append('div')
+                  .attr('id', d => `h${d}`)
+                  .attr('class', 'hidden node')
+                  .attr('style', 'background-color:#FFFFFF;border:1px solid black');
 
   let sigmoidCallback = this.sigmoidNodes.bind(this,
     this.neuralNetwork.sampleHiddenOutputs,
-    $('.node.hidden'),
+    document.querySelectorAll('.node.hidden'),
     this.displayOutputNodes,
     Text.header7
   );
@@ -219,130 +208,132 @@ Visualizer.prototype.displayHiddenNodes = function() {
   let fireCallback = this.fireNodes.bind(this,
     this.neuralNetwork.sampleHiddenInputs,
     this.neuralNetwork.sampleHiddenOutputs,
-    $('.node.hidden'),
+    document.querySelectorAll('.node.hidden'),
     sigmoidCallback,
     Text.header6
   );
 
-  this.headerSpace.append(this.nextButton(fireCallback));
+  this.appendNextButton(fireCallback);
 
   this.connectLayers('input', 'hidden', this.neuralNetwork.sampleWIH);
 
   this.titleSpace.innerHTML = Text.header5;
-  document.getElementById('input-nodes-box').className = 'visual-box top';
-  setTimeout(() => hiddenNodesBox.className = 'visual-box center', 0);
+  d3.select('#input-nodes-box').attr('class', 'visual-box top');
+  setTimeout(() => hiddenNodesBox.attr('class', 'visual-box center'), 0);
 };
 
 Visualizer.prototype.sigmoidNodes = function(outputVals, nodeSelection, nextCallback, text) {
   Visualizer.removeNextButton();
 
-  nodeSelection.each( (idx, node) => {
+  nodeSelection.forEach( (node, idx) => {
     node.children[0].innerHTML = Math.floor(outputVals[idx] * 100) / 100;
   });
 
-  this.headerSpace.append(this.nextButton(nextCallback));
+  this.appendNextButton(nextCallback);
   this.titleSpace.innerHTML = text;
 };
 
 Visualizer.prototype.displayOutputNodes = function() {
   Visualizer.removeNextButton();
-  $('p').remove();
+  d3.selectAll('p').remove();
 
-  let outputNodesBox = document.createElement('div');
-  outputNodesBox.id = 'output-nodes-box';
-  outputNodesBox.className = 'visual-box hide';
+  let outputNodesBox = this.workSpace.append('div')
+                                        .attr('id', 'output-nodes-box')
+                                        .attr('class', 'visual-box hide');
 
-  let outputNodesList = document.createElement('div');
-  outputNodesList.className = 'node-list';
-
-  for(let i = 0; i < 10; i ++) {
-    let node = document.createElement('div');
-    node.className = 'output node';
-    node.id = `o${i}`;
-    $(node).attr('style', 'background-color:#FFFFFF;border:1px solid black');
-    outputNodesList.appendChild(node);
-  }
-
-  outputNodesBox.appendChild(outputNodesList);
-  this.workSpace.append(outputNodesBox);
+  let data = [...Array(10).keys()];
+  outputNodesBox.append('div')
+                  .attr('class', 'node-list')
+                  .selectAll('div')
+                  .data(data).enter()
+                  .append('div')
+                  .attr('id', d => `o${d}`)
+                  .attr('class', 'output node')
+                  .attr('style', 'background-color:#FFFFFF;border:1px solid black');
 
   let sigmoidCallback = this.sigmoidNodes.bind(this,
-    this.neuralNetwork.finalOutputs.toArray(),
-    $('.node.output'),
+    this.neuralNetwork.finalOutputs,
+    document.querySelectorAll('.node.output'),
     this.clearTopLayers.bind(this),
     Text.header10
   );
 
   let fireCallback = this.fireNodes.bind(this,
-    this.neuralNetwork.finalInputs.toArray(),
-    this.neuralNetwork.finalOutputs.toArray(),
-    $('.node.output'),
+    this.neuralNetwork.finalInputs,
+    this.neuralNetwork.finalOutputs,
+    document.querySelectorAll('.node.output'),
     sigmoidCallback,
     Text.header9
   );
 
-  this.headerSpace.append(this.nextButton(fireCallback));
-
   this.connectLayers('hidden', 'output', this.neuralNetwork.sampleWHO);
 
+  this.appendNextButton(fireCallback);
   this.titleSpace.innerHTML = Text.header8;
-  setTimeout(() => outputNodesBox.className = 'visual-box bottom', 0);
+  setTimeout(() => outputNodesBox.attr('class', 'visual-box bottom'));
 };
 
 Visualizer.prototype.clearTopLayers = function() {
   Visualizer.removeNextButton();
-  $('#input-nodes-box').remove();
-  $('#hidden-nodes-box').remove();
-  $('.node.output').off();
-  $('#output-nodes-box').attr('class', 'visual-box center');
+  d3.select('#input-nodes-box').remove();
+  d3.select('#hidden-nodes-box').remove();
+  document.querySelectorAll('.node.output').forEach( node => {
+    d3.select(node).on('mouseover', () => {});
+    d3.select(node).on('mouseout', () => {});
+  });
+  d3.select('#output-nodes-box').attr('class', 'visual-box center');
   setTimeout(() => this.displayAnswer(), 300);
 };
 
 Visualizer.prototype.displayAnswer = function() {
-  this.headerSpace.append(this.nextButton(this.reset.bind(this), 'again!'));
+  this.appendNextButton(this.reset.bind(this), 'again!');
   this.titleSpace.innerHTML = Text.header11;
 
-  let digits = document.createElement('div');
-  digits.id = 'answer-digits';
-  digits.className = 'hide';
-  let digitY = $('#output-nodes-box').get(0).getBoundingClientRect().bottom;
+  let digits = d3.select('body').append('div')
+                                  .attr('id', 'answer-digits')
+                                  .attr('class', 'hide');
 
-  [...Array(10).keys()].forEach( idx => {
-    let digit = document.createElement('div');
-    digit.className = 'answer-digit';
-    digit.innerHTML = idx;
-    let digitX = $(`#o${idx}`).get(0).getBoundingClientRect().left;
-    $(digit).attr('style', `top:${digitY}px;left:${digitX}px`);
-    digits.appendChild(digit);
-  });
+  let digitY = d3.select('#output-nodes-box').node().getBoundingClientRect().bottom;
+
+  let data = [...Array(10).keys()];
+
+  digits.selectAll('div')
+          .data(data).enter()
+          .append('div')
+          .attr('class', 'answer-digit')
+          .text(d => d)
+          .attr('style', (d) => {
+            let digitX = d3.select(`#o${d}`).node().getBoundingClientRect().left;
+            return `top:${digitY}px;left:${digitX}px`;
+          });
 
   let chosenDigit = this.neuralNetwork.chosenDigit;
-  let chosenNodeCoords = this.answerNode().get(0).getBoundingClientRect();
+  let chosenNodeCoords = this.answerNode().getBoundingClientRect();
   let chosenX = chosenNodeCoords.left;
   let chosenY = chosenNodeCoords.top;
 
-  let arrowBox = document.createElement('div');
-  arrowBox.id = 'arrow-box';
-  arrowBox.className = 'hide';
-  let arrow = document.createElement('div');
-  arrow.className = 'arrow';
-  let article = (chosenDigit == 8) ? ('an') : ('a');
-  arrow.innerHTML = `I think that was ${article} ${chosenDigit}`;
-  arrowBox.appendChild(arrow);
-  $(arrowBox).attr('style', `top:${chosenY}px;left:${chosenX}px;transform:translateY(-200%) translateX(-40%)`);
+  let arrowBox = d3.select('body').append('div')
+                                    .attr('id', 'arrow-box')
+                                    .attr('class', 'hide');
 
-  $('body').append(digits);
-  $('body').append(arrowBox);
-  setTimeout(() => digits.className = '', 10);
-  setTimeout(() => arrowBox.className = '', 10);
+  arrowBox.append('div')
+            .attr('class', 'arrow')
+            .text( () => {
+              let article = (chosenDigit == 8) ? ('an') : ('a');
+              return `I think that was ${article} ${chosenDigit}`;
+            })
+            .attr('style', `top:${chosenY}px;left:${chosenX}px;transform:translateY(-200%) translateX(-40%)`);
+
+  setTimeout(() => digits.attr('class', ''), 10);
+  setTimeout(() => arrowBox.attr('class', ''), 10);
 };
 
 Visualizer.prototype.reset = function() {
-  $('.weights-matrix').remove();
-  $('#arrow-box').remove();
-  $('#answer-digits').remove();
-  $('#output-nodes-box').remove();
-  $('.next-button').remove();
+  d3.selectAll('.weights-matrix').remove();
+  d3.select('#arrow-box').remove();
+  d3.select('#answer-digits').remove();
+  d3.select('#output-nodes-box').remove();
+  d3.selectAll('.next-button').remove();
   this.titleSpace.remove();
 
   this.displayNumberPicker();
@@ -350,16 +341,16 @@ Visualizer.prototype.reset = function() {
 
 Visualizer.prototype.answerNode = function() {
   let answer = this.neuralNetwork.chosenDigit;
-  return $(`#o${answer}`);
+  return d3.select(`#o${answer}`).node();
 };
 
 Visualizer.prototype.drawImage = function(csv, colorFunc, mouseOverFunc, mouseOutFunc) {
-  csv = csv.split(",").map( val => parseFloat(val) );
-  let image = d3.select('#work-space')
-                  .append("svg")
-                  .attr("height", 450)
-                  .attr("width", 300)
-                  .attr("id", 'csv-box');
+  imageData = numeric.parseCSV(csv)[0];
+
+  let image = this.workSpace.append("svg")
+                                .attr("height", 450)
+                                .attr("width", 300)
+                                .attr("id", 'csv-box');
 
   let xFunc = function(d, i) {
     return (12 * (i % 28));
@@ -367,8 +358,9 @@ Visualizer.prototype.drawImage = function(csv, colorFunc, mouseOverFunc, mouseOu
   let yFunc = function(d, i) {
     return (16*Math.floor(i / 28));
   };
+
   image.selectAll('rect')
-      .data(csv)
+      .data(imageData)
       .enter()
       .append('rect')
       .attr('class', 'pixel')
@@ -381,53 +373,66 @@ Visualizer.prototype.drawImage = function(csv, colorFunc, mouseOverFunc, mouseOu
       .on('mouseout', (d, i, rect) => mouseOutFunc(d, i, rect));
 };
 
-Visualizer.floatValue = function(d, i, rect) {
-  d3.select(rect[i]).attr('stroke-width', 2).attr('width', 11).attr('height', 15).attr('stroke', '#FF3333');
-  let text = document.createElement('div');
-  text.innerHTML = d;
-  text.className = 'value-callout';
-  $('#work-space').append(text);
+Visualizer.prototype.floatValue = function(d, i, rect) {
+  d3.select(rect[i])
+      .attr('stroke-width', 2)
+      .attr('width', 11)
+      .attr('height', 15)
+      .attr('stroke', '#FF3333');
+
+  this.workSpace.append('div')
+                    .text(d)
+                    .attr('class', 'value-callout');
 };
 
-Visualizer.removeFloat = function(d, i, rect) {
-  d3.select(rect[i]).attr('stroke-width', 0).attr('width', 12).attr('height', 16);
-  $('.value-callout').remove();
+Visualizer.prototype.removeFloat = function(d, i, rect) {
+  d3.select(rect[i])
+      .attr('stroke-width', 0)
+      .attr('width', 12)
+      .attr('height', 16);
+
+  d3.select('.value-callout').remove();
 };
 
 Visualizer.drawPixel = function(d, i, rect) {
   if (window.mouseDown === 0) { return; }
 
-  let color = Math.floor(Math.random() * 30);
-  d3.select(rect[i])
-  .style('fill', `rgb(${color},${color},${color})`)
-  .data([ 255 - color ]);
+  d3.select(rect[i]).each( (d, i , rect) => {
+    let color = Math.floor(Math.random() * 30);
+    d3.select(rect[0]).style('fill', `rgb(${color},${color},${color})`);
+    d3.select(rect[0]).data([ 255 - color ]);
+  });
 };
 
 Visualizer.prototype.connectLayers = function(firstClass, secondClass, weightsMatrix) {
-  let weights = d3.select('body').append('svg');
-  weights.attr('class', 'weights-matrix');
+  let weights = d3.select('body').append('svg')
+                                    .attr('class', 'weights-matrix');
 
   let scale = d3.scaleLinear().domain([-0.5, 0.5]).range([0, 1]);
-  $(`.node.${firstClass}`).each( (idxI, nodeI) => {
-    $(nodeI).hover(this.drawPaths, this.hidePaths);
 
-    $(`.node.${secondClass}`).each( (idxJ, nodeJ) => {
-      $(nodeJ).hover(this.drawPaths, this.hidePaths);
+  d3.selectAll(`.node.${firstClass}`).each( (d, idxI, nodesI) => {
+    d3.select(nodesI[idxI]).on('mouseover', this.drawPaths)
+                            .on('mouseout', this.hidePaths);
 
-      let color = d3.interpolateInferno(scale(weightsMatrix.get(idxJ, idxI)));
-      let path = weights.append('line')
-        .attr('stroke-width', 4)
-        .attr('stroke', color)
-        .data([{ node1: nodeI.id, node2: nodeJ.id }]);
+    d3.selectAll(`.node.${secondClass}`).each( (d, idxJ, nodesJ) => {
+      d3.select(nodesJ[idxJ]).on('mouseover', this.drawPaths)
+                              .on('mouseout', this.hidePaths);
+
+      let color = d3.interpolateInferno(scale(weightsMatrix[idxJ][idxI]));
+      weights.append('line')
+              .attr('stroke-width', 4)
+              .attr('stroke', color)
+              .data([{ node1: nodesI[idxI].id, node2: nodesJ[idxJ].id }]);
     });
   });
 };
 
-Visualizer.prototype.drawPaths = function(event) {
-  let source = event.target;
+Visualizer.prototype.drawPaths = function(d, i, node) {
+  let source = node[0];
   if (source.id === '' ) { source = source.parentElement; }
-  let x1 = source.getBoundingClientRect().left + ($(source).width() / 2);
-  let y1 = source.getBoundingClientRect().bottom - ($(source).height() / 2);
+  let boundingRect = source.getBoundingClientRect();
+  let x1 = boundingRect.left + boundingRect.width / 2;
+  let y1 = boundingRect.bottom - boundingRect.height / 2;
 
   let paths = d3.selectAll('line').filter( d =>
     (d.node1 === source.id  || d.node2 === source.id)
@@ -435,16 +440,24 @@ Visualizer.prototype.drawPaths = function(event) {
 
   paths.each( (d, i, paths) => {
     let targetId = (d.node1 === source.id) ? (d.node2) : (d.node1);
-    let target = $(`#${targetId}`)[0];
+    let target = d3.select(`#${targetId}`).node();
 
-    let x2 = target.getBoundingClientRect().left + ($(target).width() / 2);
-    let y2 = target.getBoundingClientRect().top + ($(target).height() / 2);
-    d3.select(paths[i]).attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2).attr('stroke-width', 4);
+    let boundingRect = target.getBoundingClientRect();
+    let x2 = boundingRect.left + boundingRect.width / 2;
+    let y2 = boundingRect.top + boundingRect.height / 2;
+
+    d3.select(paths[i])
+        .attr('x1', x1)
+        .attr('y1', y1)
+        .attr('x2', x2)
+        .attr('y2', y2)
+        .attr('stroke-width', 4);
   });
 };
 
-Visualizer.prototype.hidePaths = function(event) {
-  let source = event.target;
+Visualizer.prototype.hidePaths = function(d, i, node) {
+
+  let source = node[0];
   if (source.id === '' ) { source = source.parentElement; }
 
   let paths = d3.selectAll('line').filter( d =>
@@ -458,23 +471,25 @@ Visualizer.prototype.hidePaths = function(event) {
 
 Visualizer.prototype.fireNodes = function(inputVals, outputVals, nodeSelection, nextCallback, title) {
   Visualizer.removeNextButton();
-  let next = this.nextButton(nextCallback);
   let i = 0;
+  let len = nodeSelection.length;
 
   let firing = setInterval( () => {
-    $(nodeSelection[i - 1]).trigger('mouseout');
+    d3.select(nodeSelection[i - 1]).each( (d, i, node) => this.hidePaths(d, i, node));
 
-    if (i === nodeSelection.length) {
+    if (i === len) {
       window.clearInterval(firing);
-      this.headerSpace.append(next);
+      this.appendNextButton(nextCallback);
     } else {
-      let value = document.createElement('p');
-      value.innerHTML = (Math.floor(inputVals[i] * 100) / 100);
-      let color = d3.interpolateInferno(outputVals[i]);
+      d3.select(nodeSelection[i])
+          .attr('style', () => {
+            let color = d3.interpolateInferno(outputVals[i]);
+            return `background-color:${color}`;
+          })
+          .append('p')
+          .text( () => Math.floor(inputVals[i] * 100) / 100);
 
-      $(nodeSelection[i]).trigger('mouseover');
-      $(nodeSelection[i]).attr('style', `background-color:${color}`);
-      nodeSelection[i].appendChild(value);
+      d3.select(nodeSelection[i]).each( (d, i, node) => this.drawPaths(d, i, node));
     }
 
     i++;
@@ -486,17 +501,17 @@ Visualizer.prototype.fireNodes = function(inputVals, outputVals, nodeSelection, 
 Visualizer.prototype.centerImage = function() {
   for(let i = 0; i < 5; i++) {
       let xSum = 0, ySum = 0;
-      let csv = d3.selectAll('rect').data();
+      let imageData = d3.selectAll('rect').data();
 
-      csv.forEach( (val, i) => {
+      imageData.forEach( (val, i) => {
         let x = i % 28 - 14;
         let y = Math.floor(i / 28) - 14;
         xSum += val * x;
         ySum += val * y;
       });
 
-      xCenter = Math.floor((xSum / csv.length) / 255);
-      yCenter = Math.floor((ySum / csv.length) / 255);
+      xCenter = Math.floor((xSum / imageData.length) / 255);
+      yCenter = Math.floor((ySum / imageData.length) / 255);
 
       newCSV = [];
 
@@ -508,7 +523,7 @@ Visualizer.prototype.centerImage = function() {
         newCSV[i] = color;
       });
 
-      $('#csv-box').remove();
+      d3.select('#csv-box').remove();
 
       this.drawImage(newCSV.join(','),
       Visualizer.greyscaleMap255(),
@@ -530,18 +545,17 @@ Visualizer.greyscaleMap1 = function() {
             .range(["#FFFFFF", "#000000"]);
 };
 
-Visualizer.prototype.nextButton = function(callback, buttonText) {
+Visualizer.prototype.appendNextButton = function(callback, buttonText) {
   buttonText = (buttonText === undefined) ? ('cool') : (buttonText);
-  let button = document.createElement('h3');
-  button.className = 'next-button hoverable';
-  button.id = `${buttonText.toLowerCase()}`;
-  button.innerHTML = buttonText;
-  $(button).on('click', callback.bind(this));
-  return button;
+  this.headerSpace.append('h3')
+                      .attr('class', 'next-button hoverable')
+                      .attr('id', `${buttonText.toLowerCase()}`)
+                      .text(buttonText)
+                      .on('click', callback.bind(this));
 };
 
 Visualizer.removeNextButton = function() {
-  $('.next-button').remove();
+  d3.select('.next-button').remove();
 };
 
 module.exports = Visualizer;
