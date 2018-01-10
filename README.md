@@ -1,10 +1,10 @@
 # An Extremely Brief Introduction to Neural Networks
-An artificial neural network is a programming design scheme for approximating complex functions. Neural networks are able to solve problems such as image and speech recognition, where the input is large and difficult to quantify with hard and fast rules. As their name suggests, neural networks are architecturally similar to the brain, and in fact biological brains are a good mental model for how neural networks function. However a much better understanding comes from actually seeing one in action, which is the goal of this demonstration.
+A neural network is a statistical model for approximating complex functions, and they are especially well suited for computer processing. Neural networks are able to solve problems such as image and speech recognition, where the input is large and difficult to quantify with hard and fast rules. As their name suggests, neural networks are structured _somewhat_ similarly to the brain, but this is only a rough analogy. A much better understanding comes from actually seeing one in action, which is the goal of this demonstration.
 
 # Meet a JavaScript Neural Network
 ![nodes layer](./images/nodes_layer.png)
 
-This is an in-browser, JavaScript neural network that identifies handwritten numbers with >95% accuracy. It is inspired by its python cousin [here](https://github.com/makeyourownneuralnetwork/makeyourownneuralnetwork) (many thanks to Tariq Rashid for his excellent book). Everything the network needs to function, including training data, is packaged in the JavaScript - no back end necessary.
+This is an in-browser, JavaScript neural network that identifies handwritten numbers with >95% accuracy. It is inspired by its python cousin [here](https://github.com/makeyourownneuralnetwork/makeyourownneuralnetwork) (thanks to Tariq Rashid for his excellent book). Everything the network needs to function, including training data, is packaged in the JavaScript - no back end necessary.
 
 ```javascript
 NeuralNetwork.prototype.query = function(inputs) {
